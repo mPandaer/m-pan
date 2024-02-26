@@ -7,10 +7,14 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="m-pan-cache-redis" />
+        <module name="m-pan-swagger2" />
+        <module name="m-pan-schedule" />
+        <module name="m-pan-core" />
         <module name="m-pan-web" />
         <module name="m-pan-mybatis-plus" />
-        <module name="m-pan-swagger2" />
-        <module name="m-pan-core" />
+        <module name="m-pan-cache-caffeine" />
+        <module name="m-pan-cache-core" />
         <module name="m-pan-distribution" />
       </profile>
       <profile name="Annotation profile for m-pan-parent" enabled="true">
@@ -30,12 +34,17 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="m-pan-cache" options="-parameters" />
+      <module name="m-pan-cache-caffeine" options="-parameters" />
+      <module name="m-pan-cache-core" options="-parameters" />
+      <module name="m-pan-cache-redis" options="-parameters" />
       <module name="m-pan-core" options="-parameters" />
       <module name="m-pan-distribution" options="-parameters" />
       <module name="m-pan-framework" options="-parameters" />
       <module name="m-pan-mybatis-plus" options="-parameters" />
       <module name="m-pan-orm" options="-parameters" />
       <module name="m-pan-parent" options="-parameters" />
+      <module name="m-pan-schedule" options="-parameters" />
       <module name="m-pan-server" options="-parameters" />
       <module name="m-pan-swagger2" options="-parameters" />
       <module name="m-pan-web" options="-parameters" />
