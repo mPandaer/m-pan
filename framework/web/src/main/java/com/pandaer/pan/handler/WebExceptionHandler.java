@@ -1,6 +1,7 @@
 package com.pandaer.pan.handler;
 
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.core.exception.MPanFrameworkException;
 import com.pandaer.pan.core.response.Resp;
 import com.pandaer.pan.core.response.ResponseCode;
 import org.springframework.validation.BindException;
@@ -48,7 +49,13 @@ public class WebExceptionHandler {
         FieldError fieldError = e.getBindingResult().getFieldErrors().stream().findFirst().get();
         return Resp.error(ResponseCode.ERROR_PARAM.getCode(), fieldError.getDefaultMessage());
     }
-    
+
+
+    @ExceptionHandler(value = MPanFrameworkException.class)
+    public Resp<Object> mPanFrameworkExceptionHandler(MPanFrameworkException e) {
+        return Resp.error(ResponseCode.ERROR.getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(value = RuntimeException.class)
     public Resp<Object> runtimeExceptionHandler(RuntimeException e) {
         return Resp.error(ResponseCode.ERROR.getCode(), e.getMessage());
