@@ -15,4 +15,6 @@ public interface IUserService extends IService<MPanUser> {
     Long register(UserRegisterContext context);
 
     String login(UserLoginContext context);
+
+    void exit(Long userId);
 }

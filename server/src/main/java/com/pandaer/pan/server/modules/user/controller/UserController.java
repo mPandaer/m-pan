@@ -1,6 +1,7 @@
 package com.pandaer.pan.server.modules.user.controller;
 
 import com.pandaer.pan.core.response.Resp;
+import com.pandaer.pan.server.common.utils.UserIdUtil;
 import com.pandaer.pan.server.modules.user.context.UserLoginContext;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
@@ -12,10 +13,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Api(value = "用户模块")
 @RequestMapping("/user")
@@ -48,5 +46,14 @@ public class UserController {
         UserLoginContext context = userConverter.PO2ContextInLogin(userLoginPO);
         String accessToken = userService.login(context);
         return Resp.successAndData(accessToken);
+    }
+
+    @ApiOperation(value = "用户退出接口",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping("exit")
+    public Resp<Object> exit() {
+        userService.exit(UserIdUtil.getUserId());
+        return Resp.success();
     }
 }

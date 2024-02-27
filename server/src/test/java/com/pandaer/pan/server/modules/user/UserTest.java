@@ -1,6 +1,8 @@
 package com.pandaer.pan.server.modules.user;
 
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.core.utils.JwtUtil;
+import com.pandaer.pan.server.modules.user.constants.UserConstants;
 import com.pandaer.pan.server.modules.user.context.UserLoginContext;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.service.IUserService;
@@ -47,8 +49,8 @@ public class UserTest {
     @Test
     public void testLoginSuccess() {
         Long userId = userRegister();
-        Assert.assertTrue( userId != null && userId > 0);
-        String token = userLogin(USERNAME,PASSWORD);
+        Assert.assertTrue(userId != null && userId > 0);
+        String token = userLogin(USERNAME, PASSWORD);
         Assert.assertNotNull(token);
     }
 
@@ -57,24 +59,29 @@ public class UserTest {
     @Test(expected = MPanBusinessException.class)
     public void testLoginFailWithPassWordError() {
         Long userId = userRegister();
-        Assert.assertTrue( userId != null && userId > 0);
-        userLogin(USERNAME,PASSWORD + "x");
+        Assert.assertTrue(userId != null && userId > 0);
+        userLogin(USERNAME, PASSWORD + "x");
     }
 
     //登录失败 -- 用户不存在
     @Test(expected = MPanBusinessException.class)
     public void testLoginFailWithNameNotExist() {
         Long userId = userRegister();
-        Assert.assertTrue( userId != null && userId > 0);
-        userLogin(USERNAME + "x",PASSWORD);
-        System.out.println("-----------");
+        Assert.assertTrue(userId != null && userId > 0);
+        userLogin(USERNAME + "x", PASSWORD);
+    }
+
+    //退出登录成功
+    @Test
+    public void testExitSuccess() {
+        Long userId = userRegister();
+        String token = userLogin(USERNAME,PASSWORD);
+        userId = (Long) JwtUtil.analyzeToken(token, UserConstants.LOGIN_USER_ID_KEY);
+        userService.exit(userId);
     }
 
 
-
-
-
-    private String userLogin(String username,String password) {
+    private String userLogin(String username, String password) {
         UserLoginContext context = new UserLoginContext();
         context.setUsername(username);
         context.setPassword(password);

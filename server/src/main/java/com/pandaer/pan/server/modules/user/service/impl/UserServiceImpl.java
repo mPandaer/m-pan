@@ -75,6 +75,12 @@ public class UserServiceImpl extends ServiceImpl<MPanUserMapper, MPanUser>
         return context.getAccessToken();
     }
 
+    // 清除登录信息凭证
+    @Override
+    public void exit(Long userId) {
+        panCache.evict(UserConstants.CACHE_LOGIN_USER_ID_PREFIX + userId);
+    }
+
     private void genAndSaveAccessToken(UserLoginContext context) {
         String accessToken = JwtUtil.generateToken(context.getUsername(), UserConstants.LOGIN_USER_ID_KEY,
                 context.getEntity().getUserId(), UserConstants.ONE_DAY_TIME_LONG);
