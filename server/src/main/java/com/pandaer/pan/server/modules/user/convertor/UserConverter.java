@@ -1,7 +1,9 @@
 package com.pandaer.pan.server.modules.user.convertor;
 
+import com.pandaer.pan.server.modules.user.context.UserLoginContext;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
+import com.pandaer.pan.server.modules.user.po.UserLoginPO;
 import com.pandaer.pan.server.modules.user.po.UserRegisterPO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -16,4 +18,6 @@ public interface UserConverter {
 
     @Mapping(target = "password",ignore = true)
     MPanUser context2EntityInRegister(UserRegisterContext context);
+
+    UserLoginContext PO2ContextInLogin(UserLoginPO userLoginPO);
 }

@@ -46,6 +46,12 @@
             <artifactId>m-pan-schedule</artifactId>
             <version>1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.pandaer.pan</groupId>
+            <artifactId>m-pan-cache-redis</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

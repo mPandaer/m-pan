@@ -1,5 +1,6 @@
 package com.pandaer.pan.server.modules.user.service;
 
+import com.pandaer.pan.server.modules.user.context.UserLoginContext;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -12,4 +13,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface IUserService extends IService<MPanUser> {
 
     Long register(UserRegisterContext context);
+
+    String login(UserLoginContext context);
 }
