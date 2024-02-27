@@ -1,9 +1,9 @@
 package com.pandaer.pan.server.modules.user.service;
 
-import com.pandaer.pan.server.modules.user.context.UserLoginContext;
-import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
+import com.pandaer.pan.server.modules.user.context.*;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
 
 /**
 * @author pandaer
@@ -17,4 +17,14 @@ public interface IUserService extends IService<MPanUser> {
     String login(UserLoginContext context);
 
     void exit(Long userId);
+
+    String checkUsername(CheckUsernameContext context);
+
+    String checkAnswer(CheckAnswerContext context);
+
+    void resetPassword(ResetPasswordContext context);
+
+    void changePassword(ChangePasswordContext context);
+
+    CurrentUserVO getCurrentUser(Long userId);
 }

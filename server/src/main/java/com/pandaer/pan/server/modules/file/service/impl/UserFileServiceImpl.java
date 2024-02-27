@@ -10,6 +10,7 @@ import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanUserFileMapper;
+import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -28,6 +29,16 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     public Long creatFolder(CreateFolderContext context) {
         return saveUserFile(context.getUserId(), context.getParentId(), null,
                 context.getFolderName(), FileConstants.YES, null, null);
+    }
+
+    @Override
+    public MPanUserFile getRootUserFileByUserId(Long userId) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getUserId,userId)
+                .eq(MPanUserFile::getFolderFlag,FileConstants.YES)
+                .eq(MPanUserFile::getDelFlag,FileConstants.NO)
+                .eq(MPanUserFile::getParentId, FileConstants.ROOT_FOLDER_PARENT_ID);
+        return getOne(query);
     }
 
     /**

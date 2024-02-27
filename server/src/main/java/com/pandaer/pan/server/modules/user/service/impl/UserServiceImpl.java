@@ -9,14 +9,15 @@ import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.PasswordUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
+import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.user.constants.UserConstants;
-import com.pandaer.pan.server.modules.user.context.UserLoginContext;
-import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
+import com.pandaer.pan.server.modules.user.context.*;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import com.pandaer.pan.server.modules.user.mapper.MPanUserMapper;
+import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -71,14 +72,146 @@ public class UserServiceImpl extends ServiceImpl<MPanUserMapper, MPanUser>
     @Override
     public String login(UserLoginContext context) {
         validLoginInfo(context);
+        if (checkLogined(context)) {
+            throw new MPanBusinessException("用户已经登录");
+        }
         genAndSaveAccessToken(context);
         return context.getAccessToken();
+    }
+
+
+    //坚持是否已经登录
+    private boolean checkLogined(UserLoginContext context) {
+        String token = panCache.get(UserConstants.CACHE_LOGIN_USER_ID_PREFIX +
+                context.getEntity().getUserId(), String.class);
+        return token != null;
     }
 
     // 清除登录信息凭证
     @Override
     public void exit(Long userId) {
         panCache.evict(UserConstants.CACHE_LOGIN_USER_ID_PREFIX + userId);
+    }
+
+    @Override
+    public String checkUsername(CheckUsernameContext context) {
+        MPanUser userEntity = getUserByName(context.getUsername());
+        if (userEntity == null) {
+            throw new MPanBusinessException("用户不存在");
+        }
+        String question = userEntity.getQuestion();
+        if (StringUtils.isBlank(question)) {
+            throw new MPanBusinessException("没有设置密保问题");
+        }
+        return question;
+    }
+
+    @Override
+    public String checkAnswer(CheckAnswerContext context) {
+        MPanUser userEntity = getUserByName(context.getUsername());
+        if (userEntity == null) {
+            throw new MPanBusinessException("用户不存在");
+        }
+        if (!Objects.equals(context.getAnswer(),userEntity.getAnswer())) {
+            throw new MPanBusinessException("密保答案不正确");
+        }
+        return JwtUtil.generateToken(userEntity.getUsername(), UserConstants.FORGET_USER_ID_KEY
+                , userEntity.getUserId(), UserConstants.FIVE_MIN_TIME_LONG);
+    }
+
+
+    /**
+     * 校验token是否合法
+     * 解析token并修改信息
+     * @param context
+     */
+    @Override
+    public void resetPassword(ResetPasswordContext context) {
+        checkAndParseToken(context);
+        updatePasswordInReset(context);
+    }
+
+    /**
+     * 校验旧密码
+     * 更新密码
+     * 退出登录
+     * @param context
+     */
+    @Override
+    public void changePassword(ChangePasswordContext context) {
+        checkOldPassword(context);
+        updatePasswordInChange(context);
+        exit(context.getUserId());
+    }
+
+    /**
+     * 获取当前用户的基本信息
+     * 获取对应的根目录基本信息
+     * 封装成VO对象返回
+     * @param userId
+     * @return
+     */
+    @Override
+    public CurrentUserVO getCurrentUser(Long userId) {
+        MPanUser userEntity = getById(userId);
+        if (Objects.isNull(userEntity)) {
+            throw new MPanBusinessException("当前用户不存在");
+        }
+        MPanUserFile rootFileEntity = getRootFile(userId);
+        if (Objects.isNull(rootFileEntity)) {
+            throw new MPanBusinessException("当前用户的根目录不存在");
+        }
+        return userConverter.entity2VOInCurrentUser(userEntity,rootFileEntity);
+
+    }
+
+    private MPanUserFile getRootFile(Long userId) {
+        return userFileService.getRootUserFileByUserId(userId);
+    }
+
+    private void updatePasswordInChange(ChangePasswordContext context) {
+        MPanUser entity = context.getEntity();
+        String newPassword = PasswordUtil.encryptPassword(entity.getSalt(),context.getNewPassword());
+        entity.setPassword(newPassword);
+        if (!updateById(entity)) {
+            throw new MPanBusinessException("更新密码失败");
+        }
+    }
+
+    private void checkOldPassword(ChangePasswordContext context) {
+        Long userId = context.getUserId();
+        MPanUser userEntity = getById(userId);
+        if (userEntity == null) {
+            throw new MPanBusinessException("用户未登录");
+        }
+        String cryptoPassword = PasswordUtil.encryptPassword(userEntity.getSalt(),context.getOldPassword());
+        if (!Objects.equals(userEntity.getPassword(),cryptoPassword)) {
+            throw new MPanBusinessException("旧密码不正确");
+        }
+        context.setEntity(userEntity);
+    }
+
+    private void updatePasswordInReset(ResetPasswordContext context) {
+        Long userId = context.getUserId();
+        MPanUser userEntity = getById(userId);
+        if (!Objects.equals(userEntity.getUsername(),context.getUsername())) {
+            throw new MPanBusinessException("重置密码用户名不正确");
+        }
+
+        String newPassword = context.getPassword();
+        userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getSalt(),newPassword));
+        if (!updateById(userEntity)) {
+            throw new MPanBusinessException("重置密码失败");
+        }
+    }
+
+    private void checkAndParseToken(ResetPasswordContext context) {
+        String requestToken = context.getToken();
+        Long userId = (Long) JwtUtil.analyzeToken(requestToken, UserConstants.FORGET_USER_ID_KEY);
+        if (userId == null) {
+            throw new MPanBusinessException("Token不合法");
+        }
+        context.setUserId(userId);
     }
 
     private void genAndSaveAccessToken(UserLoginContext context) {
