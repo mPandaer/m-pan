@@ -1,8 +1,14 @@
 package com.pandaer.pan.server.modules.file.service;
 
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
+import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
+import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
+import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+
+import java.util.List;
 
 /**
 * @author pandaer
@@ -14,4 +20,10 @@ public interface IUserFileService extends IService<MPanUserFile> {
     Long creatFolder(CreateFolderContext context);
 
     MPanUserFile getRootUserFileByUserId(Long userId);
+
+    List<UserFileVO> getFileList(QueryFileListContext context);
+
+    void updateFilename(UpdateFilenameContext context);
+
+    void deleteFileWithRecycle(DeleteFileWithRecycleContext context);
 }

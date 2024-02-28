@@ -1,20 +1,35 @@
 package com.pandaer.pan.server.modules.file.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.IdUtil;
+import com.pandaer.pan.server.common.event.file.DeleteFileWithRecycleEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
+import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
+import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
+import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
+import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanUserFileMapper;
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author pandaer
@@ -23,7 +38,13 @@ import java.util.Objects;
  */
 @Service
 public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUserFile>
-        implements IUserFileService {
+        implements IUserFileService, ApplicationContextAware {
+
+
+    @Autowired
+    private FileConverter fileConverter;
+
+    private ApplicationContext applicationContext;
 
     @Override
     public Long creatFolder(CreateFolderContext context) {
@@ -39,6 +60,121 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
                 .eq(MPanUserFile::getDelFlag,FileConstants.NO)
                 .eq(MPanUserFile::getParentId, FileConstants.ROOT_FOLDER_PARENT_ID);
         return getOne(query);
+    }
+
+    @Override
+    public List<UserFileVO> getFileList(QueryFileListContext context) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getParentId,context.getParentId())
+                .eq(MPanUserFile::getUserId,context.getUserId())
+                .eq(MPanUserFile::getDelFlag,context.getDelFlag());
+        if (context.getFileTypeList() != null) {
+            query.in(MPanUserFile::getFileType,context.getFileTypeList());
+        }
+        List<MPanUserFile> list = list(query);
+        return list.stream().map(fileConverter::entity2VOInQueryFileList).collect(Collectors.toList());
+    }
+
+
+    /**
+     * 判断文件是否存在
+     * 判断新文件名是否合法
+     * 更新文件名
+     * @param context
+     */
+    @Override
+    public void updateFilename(UpdateFilenameContext context) {
+        checkUserFileAndNewFilename(context);
+        doUpdateFileName(context);
+
+    }
+
+    /**
+     * 检查文件是否存在
+     * 检查当前用户是否具有删除权限
+     * 删除文件到回收站
+     * 发布文件删除事件
+     * @param context
+     */
+    @Override
+    public void deleteFileWithRecycle(DeleteFileWithRecycleContext context) {
+        checkUserFile(context);
+        batchDeleteFileWithRecycle(context);
+        publishDeleteFileEvent(context);
+    }
+
+    private void publishDeleteFileEvent(DeleteFileWithRecycleContext context) {
+        DeleteFileWithRecycleEvent deleteFileWithRecycleEvent = new DeleteFileWithRecycleEvent(this, context.getFileIdList());
+        applicationContext.publishEvent(deleteFileWithRecycleEvent);
+    }
+
+    private void batchDeleteFileWithRecycle(DeleteFileWithRecycleContext context) {
+        LambdaUpdateWrapper<MPanUserFile> update = new LambdaUpdateWrapper<>();
+        update.in(MPanUserFile::getFileId,context.getFileIdList())
+                .eq(MPanUserFile::getUserId,context.getUserId());
+        update.set(MPanUserFile::getDelFlag,FileConstants.YES)
+                .set(MPanUserFile::getUpdateTime,new Date())
+                .set(MPanUserFile::getUpdateUser,context.getUserId());
+        if (!this.update(update)) {
+            throw new MPanBusinessException("移动文件到回收站失败");
+        }
+    }
+
+    private void checkUserFile(DeleteFileWithRecycleContext context) {
+        List<Long> fileIdList = context.getFileIdList();
+        List<MPanUserFile> userFileEntityList = listByIds(fileIdList);
+        Set<Long> dbFileIdSet = userFileEntityList.stream().map(MPanUserFile::getFileId).collect(Collectors.toSet());
+        if (!Objects.equals(dbFileIdSet.size(),fileIdList.size())) {
+            throw new MPanBusinessException("存在不合法的文件ID");
+        }
+        Set<Long> userIdSet = userFileEntityList.stream().map(MPanUserFile::getUserId).collect(Collectors.toSet());
+        if (userIdSet.size() != 1 || !userIdSet.contains(context.getUserId())) {
+            throw new MPanBusinessException("存在没有操作权限的文件");
+        }
+    }
+
+    private void doUpdateFileName(UpdateFilenameContext context) {
+        String newFilename = context.getNewFilename();
+        MPanUserFile entity = context.getEntity();
+        entity.setFilename(newFilename);
+        entity.setUpdateTime(new Date());
+        entity.setUpdateUser(context.getUserId());
+        if (!updateById(entity)) {
+            throw new MPanBusinessException("文件重命名失败");
+        }
+    }
+
+    /**
+     * 文件是否存在
+     * 登录用户是否有修改权限
+     * 新旧文件名是否一致
+     * 新文件名是否已经存在
+     * @param context
+     */
+    private void checkUserFileAndNewFilename(UpdateFilenameContext context) {
+        Long fileId = context.getFileId();
+        MPanUserFile entity = getById(fileId);
+        if (entity == null) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        if (!Objects.equals(entity.getUserId(), context.getUserId())) {
+            throw new MPanBusinessException("当前用户没有修改权限");
+        }
+        if(StringUtils.equals(entity.getFilename(),context.getNewFilename())) {
+            throw new MPanBusinessException("文件名没有变化");
+        }
+
+        String newFilename = context.getNewFilename();
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getFilename,newFilename)
+                .eq(MPanUserFile::getFolderFlag,entity.getFolderFlag())
+                .eq(MPanUserFile::getUserId,context.getUserId())
+                .eq(MPanUserFile::getParentId,context.getParentId());
+        int count = count(query);
+        if (count > 0) {
+            throw new MPanBusinessException("新文件名在当前文件夹下已经存在");
+        }
+        context.setEntity(entity);
     }
 
     /**
@@ -142,6 +278,11 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
                 .eq(MPanUserFile::getFolderFlag, userFile.getFolderFlag())
                 .likeLeft(MPanUserFile::getFilename, filenameNoSuffix);
         return count(query);
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }
 

@@ -14,4 +14,5 @@ public interface FileConstants {
     String LEFT_PAIR = "(";
 
     String RIGHT_PAIR = ")";
+    String ALL_FILE_TYPE = "-1";
 }
