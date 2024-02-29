@@ -5,31 +5,42 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.core.utils.FileUtil;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.common.event.file.DeleteFileWithRecycleEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
-import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
-import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
-import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
-import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
+import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
+import com.pandaer.pan.server.modules.file.domain.MPanFile;
+import com.pandaer.pan.server.modules.file.domain.MPanFileChunk;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
+import com.pandaer.pan.server.modules.file.enums.FileType;
+import com.pandaer.pan.server.modules.file.service.IFileChunkService;
+import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanUserFileMapper;
+import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.user.constants.UserConstants;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
+import com.pandaer.pan.storage.engine.core.StorageEngine;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.xml.crypto.Data;
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author pandaer
@@ -43,6 +54,13 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
 
     @Autowired
     private FileConverter fileConverter;
+
+    @Autowired
+    private IFileService fileService;
+
+    @Autowired
+    private IFileChunkService fileChunkService;
+
 
     private ApplicationContext applicationContext;
 
@@ -101,6 +119,86 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         checkUserFile(context);
         batchDeleteFileWithRecycle(context);
         publishDeleteFileEvent(context);
+    }
+
+
+    /**
+     * 文件秒传的功能实现
+     * 1.检查文件是否存在
+     * 2.存在则秒传成功挂载关联关系，没有则秒传失败
+     * @param context
+     */
+    @Override
+    public boolean secFileUpload(SecFileUploadContext context) {
+        getRealFileWithIdentifier(context);
+        MPanFile realFileEntity = context.getRealFileEntity();
+        if (realFileEntity == null) {
+            return false;
+        }
+        saveUserFileRecord(context);
+        return true;
+    }
+
+    /**
+     * 单文件上传的业务实现
+     * 1. 文件数据的保存
+     * 2. 增加文件记录
+     * 3. 增加文件与用户之间的关系记录
+     * @param context
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void singleFileUpload(SingleFileUploadContext context) {
+        saveFileDataAndRecord(context);
+        MPanFile realFileEntity = context.getRealFileEntity();
+        saveUserFile(context.getUserId(),context.getParentId(),
+                realFileEntity.getFileId(),context.getFilename(),FileConstants.NO,realFileEntity.getFileSizeDesc(),
+                FileType.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())));
+    }
+
+    /**
+     * 文件分片数据上传
+     * 1. 保存文件分片数据
+     * 2. 增加文件分片记录
+     * 3. 校验是全部分片已经上传
+     * @param context
+     * @return
+     */
+    @Override
+    public ChunkDataUploadVO chunkDataUpload(ChunkDataUploadContext context) {
+        SaveFileChunkContext saveFileChunkContext = fileConverter.context2contextInSaveChunkFile(context);
+        fileChunkService.saveFileChunk(saveFileChunkContext);
+        ChunkDataUploadVO vo = new ChunkDataUploadVO();
+        vo.setChunkNumber(saveFileChunkContext.getCurrentChunkNumber());
+        vo.setMerge(saveFileChunkContext.getMerge());
+        return vo;
+    }
+
+    @Override
+    public UploadedFileChunkVO queryUploadedFileChunk(QueryUploadedFileChunkContext context) {
+        List<MPanFileChunk> fileChunkList = fileChunkService.getFileChunkListWithIdentifierAndUserId(context.getIdentifier(),context.getUserId());
+        List<Integer> chunkNumberList = fileChunkList.stream().map(MPanFileChunk::getChunkNumber).collect(Collectors.toList());
+        UploadedFileChunkVO uploadedFileChunkVO = new UploadedFileChunkVO();
+        uploadedFileChunkVO.setUploadedChunkNumberList(chunkNumberList);
+        return uploadedFileChunkVO;
+    }
+
+    private void saveFileDataAndRecord(SingleFileUploadContext context) {
+        SaveFileContext saveFileContext = fileConverter.context2contextInSaveFile(context);
+        fileService.saveFile(saveFileContext);
+        context.setRealFileEntity(saveFileContext.getRealFileEntity());
+    }
+
+    private void saveUserFileRecord(SecFileUploadContext context) {
+        MPanFile realFile = new MPanFile();
+        this.saveUserFile(context.getUserId(),context.getParentId(),realFile.getFileId(),context.getFilename(),
+                FileConstants.NO,realFile.getFileSizeDesc(),
+                FileType.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())));
+    }
+
+    private void getRealFileWithIdentifier(SecFileUploadContext context) {
+        MPanFile realFile = fileService.getFileWithIdentifier(context.getIdentifier());
+        context.setRealFileEntity(realFile);
     }
 
     private void publishDeleteFileEvent(DeleteFileWithRecycleContext context) {

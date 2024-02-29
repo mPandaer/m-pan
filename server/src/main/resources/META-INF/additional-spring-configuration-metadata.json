@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "pan.server.chunk-file-expiration-days",
+      "type": "java.lang.Integer",
+      "description": "分片文件过期时间",
+      "defaultValue": 1
+    }
+  ]
+}

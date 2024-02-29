@@ -1,12 +1,14 @@
 package com.pandaer.pan.server.modules.file;
 
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
-import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
-import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
-import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
-import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
+import com.pandaer.pan.server.modules.file.context.*;
+import com.pandaer.pan.server.modules.file.domain.MPanFile;
+import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
+import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.service.IUserService;
@@ -16,11 +18,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static com.pandaer.pan.server.modules.user.UserTest.*;
@@ -35,6 +41,9 @@ public class FileTest {
 
     @Autowired
     private IUserFileService userFileService;
+
+    @Autowired
+    private IFileService fileService;
 
     //查询文件列表成功
     @Test
@@ -185,6 +194,118 @@ public class FileTest {
         userFileService.deleteFileWithRecycle(deleteFileWithRecycleContext);
     }
 
+
+    //文件秒传成功
+    @Test
+    public void testSecFileUploadSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+        String identifier = "identifier";
+
+        MPanFile realFile = new MPanFile();
+        realFile.setFileId(IdUtil.get());
+        realFile.setFilename("filename");
+        realFile.setRealPath("path");
+        realFile.setFileSize("size");
+        realFile.setFileSizeDesc("desc");
+        realFile.setFileSuffix("suffix");
+        realFile.setFilePreviewContentType("type");
+        realFile.setIdentifier(identifier);
+        realFile.setCreateTime(new Date());
+        realFile.setCreateUser(userId);
+
+        boolean success = fileService.save(realFile);
+        Assert.assertTrue(success);
+
+        SecFileUploadContext context = new SecFileUploadContext();
+        context.setIdentifier(identifier);
+        context.setFilename("filename_x");
+        context.setUserId(userId);
+        context.setParentId(currentUser.getRootFileId());
+        userFileService.secFileUpload(context);
+
+    }
+
+    //文件秒传失败
+    @Test(expected = MPanBusinessException.class)
+    public void testSecFileUploadFail() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+        String identifier = "identifier";
+
+        SecFileUploadContext context = new SecFileUploadContext();
+        context.setIdentifier(identifier);
+        context.setFilename("filename_x");
+        context.setUserId(userId);
+        context.setParentId(currentUser.getRootFileId());
+        userFileService.secFileUpload(context);
+    }
+
+    //单文件上传测试成功
+    @Test
+    public void testSingleFileUploadSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+
+        //上传文件
+        MultipartFile file = genMockFile();
+        SingleFileUploadContext singleFileUploadContext = new SingleFileUploadContext();
+        singleFileUploadContext.setUserId(userId);
+        singleFileUploadContext.setFilename(file.getOriginalFilename());
+        singleFileUploadContext.setParentId(currentUser.getRootFileId());
+        singleFileUploadContext.setTotalSize(file.getSize());
+        singleFileUploadContext.setIdentifier("identifier");
+        singleFileUploadContext.setFileData(file);
+        userFileService.singleFileUpload(singleFileUploadContext);
+
+        QueryFileListContext context = new QueryFileListContext();
+        context.setFileTypeList(null);
+        context.setParentId(currentUser.getRootFileId());
+        context.setDelFlag(FileConstants.NO);
+        context.setUserId(userId);
+        List<UserFileVO> list = userFileService.getFileList(context);
+        Assert.assertTrue(list != null && list.size() == 1);
+
+
+    }
+
+
+    //测试获取上传分片文件的分片列表
+    @Test
+    public void testQueryUploadedFileChunkSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+
+        //上传文件
+        MultipartFile file = genMockFile();
+        ChunkDataUploadContext chunkDataUploadContext = new ChunkDataUploadContext();
+        chunkDataUploadContext.setCurrentChunkNumber(1);
+        chunkDataUploadContext.setTotalChunks(1);
+        chunkDataUploadContext.setFileData(file);
+        chunkDataUploadContext.setCurrentChunkSize(file.getSize());
+        chunkDataUploadContext.setTotalSize(file.getSize());
+        chunkDataUploadContext.setIdentifier("identifier");
+        chunkDataUploadContext.setFilename(file.getOriginalFilename());
+        chunkDataUploadContext.setUserId(userId);
+        ChunkDataUploadVO vo = userFileService.chunkDataUpload(chunkDataUploadContext);
+        Assert.assertTrue(vo.getChunkNumber() == 1 && vo.getMerge() == 1);
+
+        //获取文件分片列表
+        QueryUploadedFileChunkContext queryUploadedFileChunkContext = new QueryUploadedFileChunkContext();
+        queryUploadedFileChunkContext.setIdentifier("identifier");
+        queryUploadedFileChunkContext.setUserId(userId);
+        UploadedFileChunkVO uploadedFileChunkVO = userFileService.queryUploadedFileChunk(queryUploadedFileChunkContext);
+        Assert.assertEquals(1, uploadedFileChunkVO.getUploadedChunkNumberList().size());
+    }
+
+
+
+    private MultipartFile genMockFile() {
+        return new MockMultipartFile("file","demo.txt","multipart/form-data","demo test"
+                .getBytes(StandardCharsets.UTF_8));
+    }
 
 
     private Long userRegister() {

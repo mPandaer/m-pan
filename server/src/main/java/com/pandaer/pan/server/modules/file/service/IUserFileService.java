@@ -1,11 +1,10 @@
 package com.pandaer.pan.server.modules.file.service;
 
-import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
-import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
-import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
-import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
+import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 
 import java.util.List;
@@ -26,4 +25,12 @@ public interface IUserFileService extends IService<MPanUserFile> {
     void updateFilename(UpdateFilenameContext context);
 
     void deleteFileWithRecycle(DeleteFileWithRecycleContext context);
+
+    boolean secFileUpload(SecFileUploadContext context);
+
+    void singleFileUpload(SingleFileUploadContext context);
+
+    ChunkDataUploadVO chunkDataUpload(ChunkDataUploadContext context);
+
+    UploadedFileChunkVO queryUploadedFileChunk(QueryUploadedFileChunkContext context);
 }
