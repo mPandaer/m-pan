@@ -3,6 +3,7 @@ package com.pandaer.pan.server.modules.file.converter;
 import com.pandaer.pan.server.modules.file.context.ChunkDataUploadContext;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
+import com.pandaer.pan.server.modules.file.context.MergeChunkFileContext;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.context.QueryUploadedFileChunkContext;
 import com.pandaer.pan.server.modules.file.context.SaveFileChunkContext;
@@ -14,10 +15,12 @@ import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.po.ChunkDataUploadPO;
 import com.pandaer.pan.server.modules.file.po.CreateFolderPO;
 import com.pandaer.pan.server.modules.file.po.DeleteFileWithRecyclePO;
+import com.pandaer.pan.server.modules.file.po.MergeChunkFilePO;
 import com.pandaer.pan.server.modules.file.po.QueryUploadedFileChunkPO;
 import com.pandaer.pan.server.modules.file.po.SecFileUploadPO;
 import com.pandaer.pan.server.modules.file.po.SingleFileUploadPO;
 import com.pandaer.pan.server.modules.file.po.UpdateFilenamePO;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -28,7 +31,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-02-29T20:57:06+0800",
+    date = "2024-03-01T15:23:24+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -254,5 +257,41 @@ public class FileConverterImpl implements FileConverter {
         queryUploadedFileChunkContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
 
         return queryUploadedFileChunkContext;
+    }
+
+    @Override
+    public MergeChunkFileContext PO2ContextInMergeChunkFile(MergeChunkFilePO mergeChunkFilePO) {
+        if ( mergeChunkFilePO == null ) {
+            return null;
+        }
+
+        MergeChunkFileContext mergeChunkFileContext = new MergeChunkFileContext();
+
+        mergeChunkFileContext.setFilename( mergeChunkFilePO.getFilename() );
+        mergeChunkFileContext.setIdentifier( mergeChunkFilePO.getIdentifier() );
+        mergeChunkFileContext.setTotalSize( mergeChunkFilePO.getTotalSize() );
+        mergeChunkFileContext.setTotalChunks( mergeChunkFilePO.getTotalChunks() );
+
+        mergeChunkFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        mergeChunkFileContext.setParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(mergeChunkFilePO.getParentId()) );
+
+        return mergeChunkFileContext;
+    }
+
+    @Override
+    public FolderTreeNodeVO entity2VOInFolderTree(MPanUserFile entity) {
+        if ( entity == null ) {
+            return null;
+        }
+
+        FolderTreeNodeVO folderTreeNodeVO = new FolderTreeNodeVO();
+
+        folderTreeNodeVO.setId( entity.getFileId() );
+        folderTreeNodeVO.setLabel( entity.getFilename() );
+        folderTreeNodeVO.setParentId( entity.getParentId() );
+
+        folderTreeNodeVO.setChildren( com.google.common.collect.Lists.newArrayList() );
+
+        return folderTreeNodeVO;
     }
 }

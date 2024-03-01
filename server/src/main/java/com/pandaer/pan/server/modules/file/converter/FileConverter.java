@@ -3,6 +3,7 @@ package com.pandaer.pan.server.modules.file.converter;
 import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.po.*;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -62,4 +63,14 @@ public interface FileConverter {
 
     @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
     QueryUploadedFileChunkContext PO2ContextInQueryUploadedFileChunk(QueryUploadedFileChunkPO queryUploadedFileChunkPO);
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "parentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(mergeChunkFilePO.getParentId()))")
+    MergeChunkFileContext PO2ContextInMergeChunkFile(MergeChunkFilePO mergeChunkFilePO);
+
+
+    @Mapping(target = "id",source = "entity.fileId")
+    @Mapping(target = "label",source = "entity.filename")
+    @Mapping(target = "children",expression = "java(com.google.common.collect.Lists.newArrayList())")
+    FolderTreeNodeVO entity2VOInFolderTree(MPanUserFile entity);
 }

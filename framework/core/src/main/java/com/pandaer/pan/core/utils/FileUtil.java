@@ -12,6 +12,9 @@ import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Objects;
 
@@ -64,7 +67,6 @@ public class FileUtil {
                 .append(DateUtil.thisDayOfMonth())
                 .append(File.separator)
                 .append(UUIDUtil.getUUID())
-                .append("_")
                 .append(getFileSuffix(filename)).toString();
     }
 
@@ -88,7 +90,7 @@ public class FileUtil {
         input.close();
     }
 
-    private static void createRealFile(File file) throws IOException {
+    public static void createRealFile(File file) throws IOException {
         File dir = file.getParentFile();
         if (!dir.exists()) {
             dir.mkdirs();
@@ -125,5 +127,22 @@ public class FileUtil {
                 .append(UUIDUtil.getUUID())
                 .append("_")
                 .append(currentChunkNumber).toString();
+    }
+
+    public static void appendWrite(Path target, Path source) throws IOException {
+        Files.write(target,Files.readAllBytes(source), StandardOpenOption.APPEND);
+    }
+
+    public static void writeFile2OutputStream(FileInputStream fileInputStream, OutputStream outputStream, long length) {
+        try  {
+            FileChannel fileChannel = fileInputStream.getChannel();
+            fileChannel.transferTo(0,length,Channels.newChannel(outputStream));
+            outputStream.flush();
+            outputStream.close();
+            fileInputStream.close();
+            fileChannel.close();
+        } catch (IOException e) {
+            throw new MPanBusinessException("文件写入输出流失败");
+        }
     }
 }

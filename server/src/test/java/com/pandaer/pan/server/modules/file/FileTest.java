@@ -8,11 +8,14 @@ import com.pandaer.pan.server.modules.file.domain.MPanFile;
 import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
+import io.swagger.models.auth.In;
+import lombok.AllArgsConstructor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,10 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 import static com.pandaer.pan.server.modules.user.UserTest.*;
 
@@ -301,8 +302,109 @@ public class FileTest {
     }
 
 
+    //测试多线程文件分片上传
+    @Test
+    public void testChunkFileUpload() throws InterruptedException {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+        CountDownLatch countDownLatch = new CountDownLatch(10);
 
-    private MultipartFile genMockFile() {
+        for (int i = 0; i < 10; i++) {
+            new ChunkFileUploader(currentUser.getRootFileId(),
+                    userId,i + 1,10,userFileService,countDownLatch).start();
+        }
+
+        countDownLatch.await();
+    }
+
+
+    //定义一个上传器
+    @AllArgsConstructor
+    static class ChunkFileUploader extends Thread {
+        private Long parentId;
+
+        private Long userId;
+
+        private Integer chunkNumber;
+
+        private int chunks;
+
+        private IUserFileService userFileService;
+
+
+        private CountDownLatch countDownLatch;
+
+
+
+        @Override
+        public void run() {
+            MultipartFile chunkFile = genMockFile();
+            String identifier = "123456789";
+            String filename = "demo.txt";
+            ChunkDataUploadContext chunkDataUploadContext = new ChunkDataUploadContext();
+            chunkDataUploadContext.setUserId(userId);
+            chunkDataUploadContext.setTotalChunks(chunks);
+            chunkDataUploadContext.setFileData(chunkFile);
+            chunkDataUploadContext.setIdentifier(identifier);
+            chunkDataUploadContext.setFilename(filename);
+            chunkDataUploadContext.setTotalSize(chunkFile.getSize() * chunks);
+            chunkDataUploadContext.setCurrentChunkSize(chunkFile.getSize());
+            chunkDataUploadContext.setCurrentChunkNumber(chunkNumber);
+            ChunkDataUploadVO vo = userFileService.chunkDataUpload(chunkDataUploadContext);
+            if (Objects.equals(vo.getMerge(), FileConstants.YES)) {
+                System.out.println(vo.getChunkNumber() + "号分片 检测到需要合并文件 " + vo.getMerge());
+                MergeChunkFileContext mergeChunkFileContext = new MergeChunkFileContext();
+                mergeChunkFileContext.setIdentifier(identifier);
+                mergeChunkFileContext.setFilename(filename);
+                mergeChunkFileContext.setParentId(parentId);
+                mergeChunkFileContext.setUserId(userId);
+                mergeChunkFileContext.setTotalChunks((long) chunks);
+                mergeChunkFileContext.setTotalSize(chunkFile.getSize() * chunks);
+                userFileService.mergeChunkFile(mergeChunkFileContext);
+            }
+
+            countDownLatch.countDown();
+
+        }
+    }
+
+
+    //测试获取文件夹树
+    @Test
+    public void testGetFolderTree() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long fileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId != null && fileId > 0);
+
+
+        createFolderContext.setFolderName("新建文件夹-2");
+        fileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId != null && fileId > 0);
+
+
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-2-1");
+        createFolderContext.setParentId(fileId);
+        fileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId != null && fileId > 0);
+
+
+        QueryFolderTreeContext queryFolderTreeContext = new QueryFolderTreeContext();
+        queryFolderTreeContext.setUserId(userId);
+        List<FolderTreeNodeVO> folderTree = userFileService.getFolderTree(queryFolderTreeContext);
+        Assert.assertTrue(folderTree != null && folderTree.size() == 1);
+        folderTree.forEach(FolderTreeNodeVO::print);
+    }
+
+
+    private static MultipartFile genMockFile() {
         return new MockMultipartFile("file","demo.txt","multipart/form-data","demo test"
                 .getBytes(StandardCharsets.UTF_8));
     }

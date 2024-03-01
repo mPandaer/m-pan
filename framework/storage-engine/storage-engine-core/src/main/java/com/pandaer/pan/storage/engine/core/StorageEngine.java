@@ -1,8 +1,6 @@
 package com.pandaer.pan.storage.engine.core;
 
-import com.pandaer.pan.storage.engine.core.context.DeleteFileContext;
-import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
-import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
+import com.pandaer.pan.storage.engine.core.context.*;
 
 import java.io.IOException;
 
@@ -17,4 +15,8 @@ public interface StorageEngine {
 
 
     void storeChunk(StoreFileChunkContext context) throws IOException;
+
+    void mergeChunk(MergeChunkContext context) throws IOException;
+
+    void readFile(ReadFileContext context) throws IOException;
 }

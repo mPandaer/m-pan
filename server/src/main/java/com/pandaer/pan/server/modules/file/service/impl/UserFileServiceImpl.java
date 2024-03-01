@@ -1,13 +1,16 @@
 package com.pandaer.pan.server.modules.file.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
 import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.FileUtil;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.common.event.file.DeleteFileWithRecycleEvent;
+import com.pandaer.pan.server.common.utils.HttpUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
@@ -20,25 +23,26 @@ import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanUserFileMapper;
 import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.user.constants.UserConstants;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import com.pandaer.pan.storage.engine.core.StorageEngine;
+import com.pandaer.pan.storage.engine.core.context.ReadFileContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.crypto.Data;
 import java.io.File;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,6 +64,9 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
 
     @Autowired
     private IFileChunkService fileChunkService;
+
+    @Autowired
+    private StorageEngine storageEngine;
 
 
     private ApplicationContext applicationContext;
@@ -181,6 +188,185 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         UploadedFileChunkVO uploadedFileChunkVO = new UploadedFileChunkVO();
         uploadedFileChunkVO.setUploadedChunkNumberList(chunkNumberList);
         return uploadedFileChunkVO;
+    }
+
+    /**
+     * 合并文件分片业务实现
+     * 1. 委托给FileChunkService实现
+     * 2. 校验分片数据是否完整
+     * 3. 合并分片数据并增加文件记录
+     * 4. 发出文件合并事件 (由监听文件合并事件的监听器，删除分片数据以及分片记录) （也可以不立即删除，过期后，由定时器统一删除）
+     * 5. 建立当前文件记录与用户记录之间的映射关系
+     * @param context
+     */
+    @Override
+    public void mergeChunkFile(MergeChunkFileContext context) {
+        fileChunkService.mergeChunkFile(context);
+        //建立映射关系
+        saveUserFile(context.getUserId(), context.getParentId(),context.getRealFileId(),context.getFilename(),FileConstants.NO,
+                FileUtil.byteCount2DisplaySize(context.getTotalSize()),
+                FileType.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())));
+    }
+
+    /**
+     * 文件下载
+     * 1. 参数校验，判断文件是否存在
+     * 2. 将文件写入响应体中
+     * @param fileDownloadContext
+     */
+    @Override
+    public void download(FileDownloadContext fileDownloadContext) {
+        MPanUserFile record = getById(fileDownloadContext.getFileId());
+        checkOperationPermission(record,fileDownloadContext.getUserId());
+        if (isFolder(record)) {
+            throw new MPanBusinessException("文件夹暂不支持下载");
+        }
+        doDownloadFile(record,fileDownloadContext.getResponse());
+    }
+
+    /**
+     * 文件预览
+     * 1. 参数校验，判断文件是否存在
+     * 2. 将文件写入响应体中
+     * 3. 执行预览操作
+     * @param filePreviewContext
+     */
+    @Override
+    public void preview(FilePreviewContext filePreviewContext) {
+        MPanUserFile record = getById(filePreviewContext.getFileId());
+        checkOperationPermission(record,filePreviewContext.getUserId());
+        if (isFolder(record)) {
+            throw new MPanBusinessException("文件夹暂不支持下载");
+        }
+        doPreviewFile(record,filePreviewContext.getResponse());
+    }
+
+    /**
+     * 查询用户的文件夹树
+     * 1. 查询用户的文件夹列表
+     * 2. 在内存中构建文件夹树
+     * @param filePreviewContext
+     * @return
+     */
+    @Override
+    public List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext filePreviewContext) {
+        List<MPanUserFile> folderList = queryFolderListByUserId(filePreviewContext.getUserId());
+        List<FolderTreeNodeVO> folderTreeNodeVOList = aassembleFolderTreeNodeVOList(folderList);
+        return folderTreeNodeVOList;
+    }
+
+    /**
+     * 构建文件夹树
+     * @param folderList
+     * @return
+     */
+    private List<FolderTreeNodeVO> aassembleFolderTreeNodeVOList(List<MPanUserFile> folderList) {
+        if(CollectionUtil.isEmpty(folderList)) {
+            return Lists.newArrayList();
+        }
+
+        List<FolderTreeNodeVO> mappedFolderList = folderList.stream().map(fileConverter::entity2VOInFolderTree).collect(Collectors.toList());
+        Map<Long, List<FolderTreeNodeVO>> nodeMap = mappedFolderList.stream().collect(Collectors.groupingBy(FolderTreeNodeVO::getParentId));
+        for (FolderTreeNodeVO node : mappedFolderList) {
+            List<FolderTreeNodeVO> children = nodeMap.get(node.getId());
+            if (CollectionUtil.isNotEmpty(children)) {
+                node.setChildren(children);
+            }
+        }
+
+        return mappedFolderList.stream().filter(node -> Objects.equals(node.getParentId(), FileConstants.ROOT_FOLDER_PARENT_ID)).collect(Collectors.toList());
+    }
+
+    private List<MPanUserFile> queryFolderListByUserId(Long userId) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getUserId,userId)
+                .eq(MPanUserFile::getFolderFlag,FileConstants.YES)
+                .eq(MPanUserFile::getDelFlag,FileConstants.NO);
+        return list(query);
+    }
+
+    private void doPreviewFile(MPanUserFile record, HttpServletResponse response) {
+        MPanFile fileEntity = fileService.getById(record.getFileId());
+        if (Objects.isNull(fileEntity)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        addCorsResponseHeader(response,fileEntity.getFilePreviewContentType());
+        realFile2OutputStream(fileEntity.getRealPath(),response);
+    }
+
+    /**
+     * 执行下载操作
+     * 1. 获取到文件的存储路径
+     * 2. 添加跨域响应头
+     * 3. 拼装下载文件的名称 长度等等信息
+     * 4. 委托文件存储引擎将文件数据写入到响应的输出流中
+     * @param record
+     * @param response
+     */
+    private void doDownloadFile(MPanUserFile record, HttpServletResponse response) {
+        MPanFile fileEntity = fileService.getById(record.getFileId());
+        if (Objects.isNull(fileEntity)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        addCorsResponseHeader(response, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        addDownloadAttribute(response,record,fileEntity);
+        realFile2OutputStream(fileEntity.getRealPath(),response);
+    }
+
+
+    /**
+     * 委托文件存储引擎将文件数据写入到响应的输出流中
+     * @param realPath
+     * @param response
+     */
+    private void realFile2OutputStream(String realPath, HttpServletResponse response) {
+        try {
+            ReadFileContext readFileContext = new ReadFileContext();
+            readFileContext.setOutputStream(response.getOutputStream());
+            readFileContext.setRealFilePath(realPath);
+            storageEngine.readFile(readFileContext);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new MPanBusinessException("文件下载失败");
+        }
+
+    }
+
+    private void addDownloadAttribute(HttpServletResponse response, MPanUserFile record, MPanFile fileEntity) {
+        try {
+            String filename = record.getFilename();
+            response.addHeader(FileConstants.CONTENT_DISPOSITION_STR,FileConstants.ATTACHMENT_PREFIX_STR + filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new MPanBusinessException("文件下载失败");
+        }
+
+        response.setContentLengthLong(Long.parseLong(fileEntity.getFileSize()));
+    }
+
+    private void addCorsResponseHeader(HttpServletResponse response, String contentType) {
+        response.reset();
+        HttpUtil.addCorsResponseHeaders(response);
+        //todo 这两行代码很疑惑
+        response.addHeader(FileConstants.CONTENT_TYPE_STR,contentType);
+        response.setContentType(contentType);
+
+    }
+
+    private boolean isFolder(MPanUserFile record) {
+        if (Objects.isNull(record)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        return Objects.equals(record.getFolderFlag(), FileConstants.YES);
+    }
+
+    private void checkOperationPermission(MPanUserFile record,Long userId) {
+        if (Objects.isNull(record)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        if (!Objects.equals(record.getUserId(),userId)) {
+            throw new MPanBusinessException("当前登录用户没有操作权限");
+        }
     }
 
     private void saveFileDataAndRecord(SingleFileUploadContext context) {

@@ -15,4 +15,8 @@ public interface FileConstants {
 
     String RIGHT_PAIR = ")";
     String ALL_FILE_TYPE = "-1";
+
+    String CONTENT_TYPE_STR = "Content-Type";
+    String CONTENT_DISPOSITION_STR = "Content-Disposition";
+    String ATTACHMENT_PREFIX_STR = "attachment;filename=";
 }

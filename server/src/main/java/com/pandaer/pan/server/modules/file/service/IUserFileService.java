@@ -4,6 +4,7 @@ import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 
@@ -33,4 +34,12 @@ public interface IUserFileService extends IService<MPanUserFile> {
     ChunkDataUploadVO chunkDataUpload(ChunkDataUploadContext context);
 
     UploadedFileChunkVO queryUploadedFileChunk(QueryUploadedFileChunkContext context);
+
+    void mergeChunkFile(MergeChunkFileContext context);
+
+    void download(FileDownloadContext fileDownloadContext);
+
+    void preview(FilePreviewContext filePreviewContext);
+
+    List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext filePreviewContext);
 }

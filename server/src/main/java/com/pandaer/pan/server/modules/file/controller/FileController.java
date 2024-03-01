@@ -12,6 +12,7 @@ import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
+import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import io.swagger.annotations.Api;
@@ -22,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -132,6 +134,55 @@ public class FileController {
         QueryUploadedFileChunkContext context = fileConverter.PO2ContextInQueryUploadedFileChunk(queryUploadedFileChunkPO);
         UploadedFileChunkVO vo = userFileService.queryUploadedFileChunk(context);
         return Resp.successAndData(vo);
+    }
+
+
+    @ApiOperation(value = "执行合并操作",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping("/file/merge")
+    public Resp<Object> mergeChunkFile(@Validated @RequestBody MergeChunkFilePO mergeChunkFilePO) {
+        MergeChunkFileContext context = fileConverter.PO2ContextInMergeChunkFile(mergeChunkFilePO);
+        userFileService.mergeChunkFile(context);
+        return Resp.success();
+    }
+
+
+    @ApiOperation(value = "文件下载",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping("/file/download")
+    public void mergeChunkFile(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId") String fileId, HttpServletResponse response) {
+        FileDownloadContext fileDownloadContext = new FileDownloadContext();
+        fileDownloadContext.setFileId(fileId);
+        fileDownloadContext.setResponse(response);
+        fileDownloadContext.setUserId(UserIdUtil.getUserId());
+        userFileService.download(fileDownloadContext);
+
+    }
+
+    @ApiOperation(value = "文件预览",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping("/file/preview")
+    public void preview(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId") String fileId, HttpServletResponse response) {
+        FilePreviewContext filePreviewContext = new FilePreviewContext();
+        filePreviewContext.setFileId(fileId);
+        filePreviewContext.setResponse(response);
+        filePreviewContext.setUserId(UserIdUtil.getUserId());
+        userFileService.preview(filePreviewContext);
+
+    }
+
+    @ApiOperation(value = "获取文件夹树",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping("/file/folder/tree")
+    public Resp<List<FolderTreeNodeVO>> getFolderTree() {
+        QueryFolderTreeContext filePreviewContext = new QueryFolderTreeContext();
+        filePreviewContext.setUserId(UserIdUtil.getUserId());
+        List<FolderTreeNodeVO> list =  userFileService.getFolderTree(filePreviewContext);
+        return Resp.successAndData(list);
     }
 
 

@@ -3,23 +3,16 @@ package com.pandaer.pan.storage.engine.core;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import com.pandaer.pan.cache.core.constants.CacheConstants;
-import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.exception.MPanFrameworkException;
-import com.pandaer.pan.storage.engine.core.context.DeleteFileContext;
-import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
-import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
+import com.pandaer.pan.storage.engine.core.context.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -113,5 +106,39 @@ public abstract class AbstractStorageEngine implements StorageEngine {
         Assert.notNull(context.getInputStream(),"文件数据不能为空");
 
     }
+
+    /**
+     * 1. 参数校验
+     * 2. 合并分片文件
+     * @param context
+     * @throws IOException
+     */
+    @Override
+    public void mergeChunk(MergeChunkContext context) throws IOException {
+        checkMergeChunkInfo(context);
+        doMergeChunk(context);
+    }
+
+    protected abstract void doMergeChunk(MergeChunkContext context) throws IOException;
+
+    private void checkMergeChunkInfo(MergeChunkContext context) {
+        Assert.notBlank(context.getIdentifier(),"文件唯一标识不能为空");
+        Assert.notEmpty(context.getChunkPathList(),"文件分片信息列表不能为空");
+        Assert.notEmpty(context.getFilename(),"文件名不能为空");
+        Assert.notNull(context.getTotalSize(),"文件总大小不能为空");
+    }
+
+    @Override
+    public void readFile(ReadFileContext context) throws IOException {
+        checkReadFileInfo(context);
+        doReadFile(context);
+    }
+
+    private void checkReadFileInfo(ReadFileContext context) {
+        Assert.notBlank(context.getRealFilePath(),"文件路径不能为空");
+        Assert.notNull(context.getOutputStream(),"输出流不能为空");
+    }
+
+    protected abstract void doReadFile(ReadFileContext context) throws IOException;
 
 }

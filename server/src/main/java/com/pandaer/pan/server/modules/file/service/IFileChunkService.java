@@ -1,5 +1,6 @@
 package com.pandaer.pan.server.modules.file.service;
 
+import com.pandaer.pan.server.modules.file.context.MergeChunkFileContext;
 import com.pandaer.pan.server.modules.file.context.SaveFileChunkContext;
 import com.pandaer.pan.server.modules.file.domain.MPanFileChunk;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -17,4 +18,6 @@ public interface IFileChunkService extends IService<MPanFileChunk> {
 
 
     List<MPanFileChunk> getFileChunkListWithIdentifierAndUserId(String identifier, Long userId);
+
+    void mergeChunkFile(MergeChunkFileContext context);
 }
