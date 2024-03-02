@@ -4,6 +4,7 @@ import com.pandaer.pan.server.modules.file.context.ChunkDataUploadContext;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
 import com.pandaer.pan.server.modules.file.context.MergeChunkFileContext;
+import com.pandaer.pan.server.modules.file.context.MoveFileContext;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.context.QueryUploadedFileChunkContext;
 import com.pandaer.pan.server.modules.file.context.SaveFileChunkContext;
@@ -16,6 +17,7 @@ import com.pandaer.pan.server.modules.file.po.ChunkDataUploadPO;
 import com.pandaer.pan.server.modules.file.po.CreateFolderPO;
 import com.pandaer.pan.server.modules.file.po.DeleteFileWithRecyclePO;
 import com.pandaer.pan.server.modules.file.po.MergeChunkFilePO;
+import com.pandaer.pan.server.modules.file.po.MoveFilePO;
 import com.pandaer.pan.server.modules.file.po.QueryUploadedFileChunkPO;
 import com.pandaer.pan.server.modules.file.po.SecFileUploadPO;
 import com.pandaer.pan.server.modules.file.po.SingleFileUploadPO;
@@ -31,7 +33,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-01T15:23:24+0800",
+    date = "2024-03-02T10:28:20+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -293,5 +295,20 @@ public class FileConverterImpl implements FileConverter {
         folderTreeNodeVO.setChildren( com.google.common.collect.Lists.newArrayList() );
 
         return folderTreeNodeVO;
+    }
+
+    @Override
+    public MoveFileContext PO2ContextInMoveFile(MoveFilePO moveFilePO) {
+        if ( moveFilePO == null ) {
+            return null;
+        }
+
+        MoveFileContext moveFileContext = new MoveFileContext();
+
+        moveFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        moveFileContext.setFileIdList( moveFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
+        moveFileContext.setTargetParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(moveFilePO.getTargetParentId()) );
+
+        return moveFileContext;
     }
 }

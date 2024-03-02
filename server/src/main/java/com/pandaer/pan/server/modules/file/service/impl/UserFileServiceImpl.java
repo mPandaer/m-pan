@@ -256,6 +256,96 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     }
 
     /**
+     * 批量移动文件
+     * 1.检查文件是否存在
+     * 2.检查目标文件夹是否存在
+     * 3.检查移动的文件列表中是否包含目标文件夹及其子文件夹 避免出现循环引用
+     * 3.检查用户是否有操作权限
+     * 4.修改文件与用户之间的关系记录
+     * @param moveFileContext
+     */
+    @Override
+    @Transactional
+    public void moveFile(MoveFileContext moveFileContext) {
+        checkMoveFileCondition(moveFileContext);
+        doMoveFile(moveFileContext);
+    }
+
+    /**
+     * 执行文件移动操作
+     * @param moveFileContext
+     */
+    @Transactional
+    public void doMoveFile(MoveFileContext moveFileContext) {
+        List<MPanUserFile> needMoveFileList = moveFileContext.getNeedMoveFileList();
+        for (MPanUserFile file : needMoveFileList) {
+            file.setParentId(moveFileContext.getTargetParentId());
+            file.setUpdateTime(new Date());
+            file.setUpdateUser(moveFileContext.getUserId());
+            handleRepeatFileName(file); //处理移动的文件到目标文件后重名
+        }
+        if (!updateBatchById(needMoveFileList)) {
+            throw new MPanBusinessException("移动文件失败");
+        }
+    }
+
+    /**
+     * 1.检查文件是否存在
+     * 2.检查目标文件夹是否存在
+     * 3.检查移动的文件列表中是否包含目标文件夹及其子文件夹 避免出现循环引用
+     * 4.检查用户是否有操作权限
+     * @param moveFileContext
+     */
+    private void checkMoveFileCondition(MoveFileContext moveFileContext) {
+        List<Long> fileIdList = moveFileContext.getFileIdList();
+        List<MPanUserFile> needMoveFileList = listByIds(fileIdList);
+        if (!Objects.equals(needMoveFileList.size(),fileIdList.size())) {
+            throw new MPanBusinessException("存在不合法的文件ID");
+        }
+        MPanUserFile targetFolder = getById(moveFileContext.getTargetParentId());
+        if (Objects.isNull(targetFolder)) {
+            throw new MPanBusinessException("目标文件夹不存在");
+        }
+        //需要移动的文件夹列表
+        List<MPanUserFile> needMoveFolderList = needMoveFileList.stream()
+                .filter(file -> Objects.equals(file.getFolderFlag(), FileConstants.YES)).collect(Collectors.toList());
+
+        //获取该用户的全部文件夹
+        List<MPanUserFile> allFolderList = queryFolderListByUserId(moveFileContext.getUserId()).stream()
+                .filter(file -> Objects.equals(file.getFolderFlag(), FileConstants.YES)).collect(Collectors.toList());
+
+        //建立一层文件夹ID与其子文件夹列表的映射关系
+        Map<Long, List<MPanUserFile>> allFolderMap = allFolderList.stream()
+                .collect(Collectors.groupingBy(MPanUserFile::getParentId));
+
+        //非法文件夹列表
+        List<MPanUserFile> unLegalFolderList = new ArrayList<>();
+        getUnLegalFolderList(allFolderMap,unLegalFolderList,needMoveFolderList);
+        List<Long> unLegalFolderIdList = unLegalFolderList.stream().map(MPanUserFile::getFileId).collect(Collectors.toList());
+        if (unLegalFolderIdList.contains(moveFileContext.getTargetParentId())) {
+            throw new MPanBusinessException("目标文件夹不能是移动文件夹及其子文件夹");
+        }
+        moveFileContext.setNeedMoveFileList(needMoveFileList);
+
+    }
+
+    /**
+     * 获取非法的文件夹列表
+     * @param allFolderMap
+     * @param unLegalFolderList
+     * @param needMoveFolderList
+     */
+    private void getUnLegalFolderList(Map<Long, List<MPanUserFile>> allFolderMap, List<MPanUserFile> unLegalFolderList, List<MPanUserFile> needMoveFolderList) {
+        for (MPanUserFile userFolder : needMoveFolderList) {
+            unLegalFolderList.add(userFolder);
+            List<MPanUserFile> childrenFolders = allFolderMap.get(userFolder.getFileId());
+            if (!CollectionUtil.isEmpty(childrenFolders)) {
+                getUnLegalFolderList(allFolderMap,unLegalFolderList,childrenFolders);
+            }
+        }
+    }
+
+    /**
      * 构建文件夹树
      * @param folderList
      * @return

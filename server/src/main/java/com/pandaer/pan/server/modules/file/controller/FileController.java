@@ -186,6 +186,17 @@ public class FileController {
     }
 
 
+    @ApiOperation(value = "文件批量移动",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping("/file/move")
+    public Resp<Object> getFolderTree(@Validated @RequestBody MoveFilePO moveFilePO) {
+        MoveFileContext moveFileContext = fileConverter.PO2ContextInMoveFile(moveFilePO);
+        userFileService.moveFile(moveFileContext);
+        return Resp.success();
+    }
+
+
 
 
 

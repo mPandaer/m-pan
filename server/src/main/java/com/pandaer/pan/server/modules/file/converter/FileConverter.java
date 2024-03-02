@@ -73,4 +73,10 @@ public interface FileConverter {
     @Mapping(target = "label",source = "entity.filename")
     @Mapping(target = "children",expression = "java(com.google.common.collect.Lists.newArrayList())")
     FolderTreeNodeVO entity2VOInFolderTree(MPanUserFile entity);
+
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "fileIdList",expression = "java(moveFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
+    @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(moveFilePO.getTargetParentId()))")
+    MoveFileContext PO2ContextInMoveFile(MoveFilePO moveFilePO);
 }

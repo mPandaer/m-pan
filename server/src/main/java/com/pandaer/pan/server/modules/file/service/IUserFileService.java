@@ -42,4 +42,6 @@ public interface IUserFileService extends IService<MPanUserFile> {
     void preview(FilePreviewContext filePreviewContext);
 
     List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext filePreviewContext);
+
+    void moveFile(MoveFileContext moveFileContext);
 }
