@@ -79,4 +79,9 @@ public interface FileConverter {
     @Mapping(target = "fileIdList",expression = "java(moveFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
     @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(moveFilePO.getTargetParentId()))")
     MoveFileContext PO2ContextInMoveFile(MoveFilePO moveFilePO);
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "copyFileIdList",expression = "java(copyFilePO.getCopyFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
+    @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(copyFilePO.getTargetParentId()))")
+    CopyFileContext PO2ContextInCopyFile(CopyFilePO copyFilePO);
 }

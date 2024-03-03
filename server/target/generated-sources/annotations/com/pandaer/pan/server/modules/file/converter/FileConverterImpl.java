@@ -1,6 +1,7 @@
 package com.pandaer.pan.server.modules.file.converter;
 
 import com.pandaer.pan.server.modules.file.context.ChunkDataUploadContext;
+import com.pandaer.pan.server.modules.file.context.CopyFileContext;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
 import com.pandaer.pan.server.modules.file.context.MergeChunkFileContext;
@@ -14,6 +15,7 @@ import com.pandaer.pan.server.modules.file.context.SingleFileUploadContext;
 import com.pandaer.pan.server.modules.file.context.UpdateFilenameContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.po.ChunkDataUploadPO;
+import com.pandaer.pan.server.modules.file.po.CopyFilePO;
 import com.pandaer.pan.server.modules.file.po.CreateFolderPO;
 import com.pandaer.pan.server.modules.file.po.DeleteFileWithRecyclePO;
 import com.pandaer.pan.server.modules.file.po.MergeChunkFilePO;
@@ -33,7 +35,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-02T10:28:20+0800",
+    date = "2024-03-02T11:20:23+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -310,5 +312,20 @@ public class FileConverterImpl implements FileConverter {
         moveFileContext.setTargetParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(moveFilePO.getTargetParentId()) );
 
         return moveFileContext;
+    }
+
+    @Override
+    public CopyFileContext PO2ContextInCopyFile(CopyFilePO copyFilePO) {
+        if ( copyFilePO == null ) {
+            return null;
+        }
+
+        CopyFileContext copyFileContext = new CopyFileContext();
+
+        copyFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        copyFileContext.setCopyFileIdList( copyFilePO.getCopyFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
+        copyFileContext.setTargetParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(copyFilePO.getTargetParentId()) );
+
+        return copyFileContext;
     }
 }

@@ -526,6 +526,124 @@ public class FileTest {
 
 
 
+    //测试批量移动文件成功
+    @Test
+    public void testCopyFileSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        //创建文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long parentFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(parentFolderId != null && parentFolderId > 0);
+
+
+        //创建子文件夹
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1-1");
+        createFolderContext.setParentId(parentFolderId);
+        Long childFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(childFolderId != null && childFolderId > 0);
+
+
+        //增加一个用户文件记录
+        MPanUserFile userFile = new MPanUserFile();
+        Long fileId = IdUtil.get();
+        userFile.setFileId(fileId);
+        userFile.setUserId(userId);
+        userFile.setParentId(childFolderId);
+        userFile.setRealFileId(-1L);
+        userFile.setFilename("demo.txt");
+        userFile.setFolderFlag(FileConstants.NO);
+        userFile.setFileSizeDesc("");
+        userFile.setFileType(FileType.getFileTypeCode(".txt"));
+        userFile.setDelFlag(FileConstants.NO);
+        userFile.setCreateUser(userId);
+        userFile.setCreateTime(new Date());
+        userFile.setUpdateUser(userId);
+        userFile.setUpdateTime(new Date());
+        userFileService.save(userFile);
+
+        //创建目标文件夹
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-2");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long targetFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(targetFolderId != null && targetFolderId > 0);
+        //复制文件
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setTargetParentId(targetFolderId);
+        copyFileContext.setUserId(userId);
+        copyFileContext.setCopyFileIdList(Collections.singletonList(fileId));
+        userFileService.copyFile(copyFileContext);
+
+    }
+
+    //批量移动文件失败 -- 移动的文件中存在目标文件夹或者其子文件夹
+    @Test(expected = MPanBusinessException.class)
+    public void testCopyFileFailTargetFolderInFile() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        //创建文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long parentFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(parentFolderId != null && parentFolderId > 0);
+
+
+        //创建子文件夹
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1-1");
+        createFolderContext.setParentId(parentFolderId);
+        Long childFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(childFolderId != null && childFolderId > 0);
+
+
+        //增加一个用户文件记录
+        MPanUserFile userFile = new MPanUserFile();
+        Long fileId = IdUtil.get();
+        userFile.setFileId(fileId);
+        userFile.setUserId(userId);
+        userFile.setParentId(childFolderId);
+        userFile.setRealFileId(-1L);
+        userFile.setFilename("demo.txt");
+        userFile.setFolderFlag(FileConstants.NO);
+        userFile.setFileSizeDesc("");
+        userFile.setFileType(FileType.getFileTypeCode(".txt"));
+        userFile.setDelFlag(FileConstants.NO);
+        userFile.setCreateUser(userId);
+        userFile.setCreateTime(new Date());
+        userFile.setUpdateUser(userId);
+        userFile.setUpdateTime(new Date());
+        userFileService.save(userFile);
+
+        //创建目标文件夹
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-2");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long targetFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(targetFolderId != null && targetFolderId > 0);
+        //复制文件
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setTargetParentId(childFolderId);
+        copyFileContext.setUserId(userId);
+        copyFileContext.setCopyFileIdList(Collections.singletonList(parentFolderId));
+        userFileService.copyFile(copyFileContext);
+
+    }
+
+
+
 
 
 

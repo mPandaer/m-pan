@@ -272,6 +272,103 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     }
 
     /**
+     * 批量复制文件
+     * 1. 检验文件的合法性以及目标文件夹的合法性
+     * 2. 判断用户是否有操作权限
+     * 3. 复制文件
+     * @param copyFileContext
+     */
+    @Override
+    @Transactional
+    public void copyFile(CopyFileContext copyFileContext) {
+        checkCopyFileCondition(copyFileContext);
+        doCopyFile(copyFileContext);
+    }
+
+    /**
+     * 复制文件，需要考虑文件夹的复制
+     * @param copyFileContext
+     */
+    @Transactional
+    public void doCopyFile(CopyFileContext copyFileContext) {
+        List<MPanUserFile> needCopyFileList = copyFileContext.getNeedCopyFileList();
+        //获取该用户的全部文件夹
+        List<MPanUserFile> allFolderList = queryFolderListByUserId(copyFileContext.getUserId()).stream()
+                .filter(file -> Objects.equals(file.getFolderFlag(), FileConstants.YES)).collect(Collectors.toList());
+
+        //建立一层文件夹ID与其子文件夹列表的映射关系
+        Map<Long, List<MPanUserFile>> allFolderMap = allFolderList.stream()
+                .collect(Collectors.groupingBy(MPanUserFile::getParentId));
+
+        List<MPanUserFile> needCopyFolderListNotNested = new ArrayList<>();
+        transformCopyFileList(allFolderMap,needCopyFolderListNotNested,needCopyFileList,copyFileContext.getTargetParentId(),copyFileContext.getUserId());
+        if (!saveBatch(needCopyFolderListNotNested)) {
+            throw new MPanBusinessException("复制文件失败");
+        }
+    }
+
+    /**
+     * 将由嵌套层级的复制文件列表转换为不嵌套的文件夹列表和文件列表
+     * @param allFolderMap
+     * @param needCopyFolderListNotNested
+     * @param needCopyFileList
+     */
+    private void transformCopyFileList(Map<Long, List<MPanUserFile>> allFolderMap,
+                                       List<MPanUserFile> needCopyFolderListNotNested,
+                                       List<MPanUserFile> needCopyFileList, Long targetParentId, Long userId) {
+        for (MPanUserFile userFile : needCopyFileList) {
+            Long newFileId = IdUtil.get();
+            Long oldFileId = userFile.getFileId();
+            userFile.setFileId(newFileId);
+            userFile.setParentId(targetParentId);
+            userFile.setCreateUser(userId);
+            userFile.setCreateTime(new Date());
+            userFile.setUpdateUser(userId);
+            userFile.setUpdateTime(new Date());
+            handleRepeatFileName(userFile);
+            needCopyFolderListNotNested.add(userFile);
+            if (Objects.equals(userFile.getFolderFlag(),FileConstants.YES)) {
+                List<MPanUserFile> childrenFileList = allFolderMap.get(oldFileId);
+                if (CollectionUtil.isNotEmpty(childrenFileList)) {
+                    transformCopyFileList(allFolderMap,needCopyFolderListNotNested,childrenFileList,newFileId,userId);
+                }
+            }
+        }
+    }
+
+    private void checkCopyFileCondition(CopyFileContext copyFileContext) {
+        List<Long> fileIdList = copyFileContext.getCopyFileIdList();
+        List<MPanUserFile> needCopyFileList = listByIds(fileIdList);
+        if (!Objects.equals(needCopyFileList.size(),fileIdList.size())) {
+            throw new MPanBusinessException("存在不合法的文件ID");
+        }
+        MPanUserFile targetFolder = getById(copyFileContext.getTargetParentId());
+        if (Objects.isNull(targetFolder) || Objects.equals(targetFolder.getFolderFlag(),FileConstants.NO)) {
+            throw new MPanBusinessException("目标文件夹不存在");
+        }
+        //需要移动的文件夹列表
+        List<MPanUserFile> needMoveFolderList = needCopyFileList.stream()
+                .filter(file -> Objects.equals(file.getFolderFlag(), FileConstants.YES)).collect(Collectors.toList());
+
+        //获取该用户的全部文件夹
+        List<MPanUserFile> allFolderList = queryFolderListByUserId(copyFileContext.getUserId()).stream()
+                .filter(file -> Objects.equals(file.getFolderFlag(), FileConstants.YES)).collect(Collectors.toList());
+
+        //建立一层文件夹ID与其子文件夹列表的映射关系
+        Map<Long, List<MPanUserFile>> allFolderMap = allFolderList.stream()
+                .collect(Collectors.groupingBy(MPanUserFile::getParentId));
+
+        //非法文件夹列表
+        List<MPanUserFile> unLegalFolderList = new ArrayList<>();
+        getUnLegalFolderList(allFolderMap,unLegalFolderList,needMoveFolderList);
+        List<Long> unLegalFolderIdList = unLegalFolderList.stream().map(MPanUserFile::getFileId).collect(Collectors.toList());
+        if (unLegalFolderIdList.contains(copyFileContext.getTargetParentId())) {
+            throw new MPanBusinessException("目标文件夹不能是移动文件夹及其子文件夹");
+        }
+        copyFileContext.setNeedCopyFileList(needCopyFileList);
+    }
+
+    /**
      * 执行文件移动操作
      * @param moveFileContext
      */
@@ -303,7 +400,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
             throw new MPanBusinessException("存在不合法的文件ID");
         }
         MPanUserFile targetFolder = getById(moveFileContext.getTargetParentId());
-        if (Objects.isNull(targetFolder)) {
+        if (Objects.isNull(targetFolder) || Objects.equals(targetFolder.getFolderFlag(),FileConstants.NO)) {
             throw new MPanBusinessException("目标文件夹不存在");
         }
         //需要移动的文件夹列表

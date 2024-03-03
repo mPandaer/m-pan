@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "pan.storage.engine.local.base-path",
+      "type": "java.lang.String",
+      "description": "文件上传基础路径",
+      "defaultValue": "@see com.pandaer.pan.core.utils.FileUtil.genDefaultBasePath"
+    },
+    {
+      "name": "pan.storage.engine.local.chunk-base-path",
+      "type": "java.lang.String",
+      "description": "分片文件上传基础路径",
+      "defaultValue": "@see com.pandaer.pan.core.utils.FileUtil.genDefaultChunkBasePath"
+    }
+  ]
+}

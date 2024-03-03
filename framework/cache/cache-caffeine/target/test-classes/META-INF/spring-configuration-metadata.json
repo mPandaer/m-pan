@@ -1,0 +1,27 @@
+{
+  "groups": [
+    {
+      "name": "pan.cache.caffeine",
+      "type": "com.pandaer.pan.cache.caffeine.test.config.CaffeineConfigProperties",
+      "sourceType": "com.pandaer.pan.cache.caffeine.test.config.CaffeineConfigProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "pan.cache.caffeine.allow-null-values",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.pandaer.pan.cache.caffeine.test.config.CaffeineConfigProperties"
+    },
+    {
+      "name": "pan.cache.caffeine.init-cache-capacity",
+      "type": "java.lang.Integer",
+      "sourceType": "com.pandaer.pan.cache.caffeine.test.config.CaffeineConfigProperties"
+    },
+    {
+      "name": "pan.cache.caffeine.max-cache-capacity",
+      "type": "java.lang.Long",
+      "sourceType": "com.pandaer.pan.cache.caffeine.test.config.CaffeineConfigProperties"
+    }
+  ],
+  "hints": []
+}

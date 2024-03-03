@@ -1,0 +1,43 @@
+{
+  "groups": [
+    {
+      "name": "pan.cache.caffeine",
+      "type": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "cache.caffeine.init-cache-capacity",
+      "type": "java.lang.Integer",
+      "description": "Caffeine缓存的初始容量",
+      "defaultValue": 256
+    },
+    {
+      "name": "pan.cache.caffeine.allow-null-value",
+      "type": "java.lang.Boolean",
+      "description": "Caffeine缓存是否允许null作为value的属性",
+      "defaultValue": "true"
+    },
+    {
+      "name": "pan.cache.caffeine.allow-null-values",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "pan.cache.caffeine.init-cache-capacity",
+      "type": "java.lang.Integer",
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "defaultValue": 100
+    },
+    {
+      "name": "pan.cache.caffeine.max-cache-capacity",
+      "type": "java.lang.Long",
+      "description": "Caffeine缓存的最大容量",
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "defaultValue": "10000L"
+    }
+  ],
+  "hints": []
+}

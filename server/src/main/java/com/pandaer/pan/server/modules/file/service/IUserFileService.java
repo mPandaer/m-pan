@@ -44,4 +44,6 @@ public interface IUserFileService extends IService<MPanUserFile> {
     List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext filePreviewContext);
 
     void moveFile(MoveFileContext moveFileContext);
+
+    void copyFile(CopyFileContext copyFileContext);
 }

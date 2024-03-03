@@ -190,9 +190,19 @@ public class FileController {
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @PostMapping("/file/move")
-    public Resp<Object> getFolderTree(@Validated @RequestBody MoveFilePO moveFilePO) {
+    public Resp<Object> moveFile(@Validated @RequestBody MoveFilePO moveFilePO) {
         MoveFileContext moveFileContext = fileConverter.PO2ContextInMoveFile(moveFilePO);
         userFileService.moveFile(moveFileContext);
+        return Resp.success();
+    }
+
+    @ApiOperation(value = "文件批量复制",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping("/file/copy")
+    public Resp<Object> copyFile(@Validated @RequestBody CopyFilePO copyFilePO) {
+        CopyFileContext copyFileContext = fileConverter.PO2ContextInCopyFile(copyFilePO);
+        userFileService.copyFile(copyFileContext);
         return Resp.success();
     }
 
