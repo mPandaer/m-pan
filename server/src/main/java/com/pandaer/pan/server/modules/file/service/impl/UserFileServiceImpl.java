@@ -10,6 +10,7 @@ import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.FileUtil;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.common.event.file.DeleteFileWithRecycleEvent;
+import com.pandaer.pan.server.common.event.file.SearchFileEvent;
 import com.pandaer.pan.server.common.utils.HttpUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.*;
@@ -22,10 +23,7 @@ import com.pandaer.pan.server.modules.file.service.IFileChunkService;
 import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanUserFileMapper;
-import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
-import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
-import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.file.vo.*;
 import com.pandaer.pan.server.modules.user.constants.UserConstants;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import com.pandaer.pan.storage.engine.core.StorageEngine;
@@ -283,6 +281,48 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     public void copyFile(CopyFileContext copyFileContext) {
         checkCopyFileCondition(copyFileContext);
         doCopyFile(copyFileContext);
+    }
+
+    /**
+     * 文件搜索
+     * 1. 根据关键字获取文件信息
+     * 2. 将文件信息实体转换为VO
+     * 3. 执行文件搜索的后续操作
+     * @param searchFileContext
+     * @return
+     */
+    @Override
+    public List<SearchFileInfoVO> searchFile(SearchFileContext searchFileContext) {
+        List<SearchFileInfoVO> voList = doSearchFile(searchFileContext);
+        afterSearchFile(searchFileContext);
+        return voList;
+    }
+
+    /**
+     * 发布文件搜索事件
+     * 1. 主要作用是为保存用户搜索历史提供一个触发点
+     * @param searchFileContext
+     */
+    private void afterSearchFile(SearchFileContext searchFileContext) {
+        SearchFileEvent searchFileEvent = new SearchFileEvent(this, searchFileContext.getKeyword(), searchFileContext.getUserId());
+        applicationContext.publishEvent(searchFileEvent);
+    }
+
+    private List<SearchFileInfoVO> doSearchFile(SearchFileContext searchFileContext) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getUserId,searchFileContext.getUserId())
+                .eq(MPanUserFile::getDelFlag,FileConstants.NO)
+                .likeRight(MPanUserFile::getFilename,searchFileContext.getKeyword());
+        List<MPanUserFile> fileList = list(query);
+        List<SearchFileInfoVO> list = fileList.stream().map(fileConverter::entity2VOInSearchFile).collect(Collectors.toList());
+        if (list.isEmpty()) {
+            return list;
+        }
+        List<Long> parentIdList = list.stream().map(SearchFileInfoVO::getParentId).collect(Collectors.toList());
+        List<MPanUserFile> parentFolderList = listByIds(parentIdList);
+        Map<Long, String> id2nameMap = parentFolderList.stream().collect(Collectors.toMap(MPanUserFile::getFileId, MPanUserFile::getFilename));
+        list.forEach(vo -> vo.setParentName(id2nameMap.get(vo.getParentId())));
+        return list;
     }
 
     /**

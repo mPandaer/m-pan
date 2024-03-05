@@ -4,6 +4,7 @@ import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
+import com.pandaer.pan.server.modules.file.vo.SearchFileInfoVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -84,4 +85,14 @@ public interface FileConverter {
     @Mapping(target = "copyFileIdList",expression = "java(copyFilePO.getCopyFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
     @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(copyFilePO.getTargetParentId()))")
     CopyFileContext PO2ContextInCopyFile(CopyFilePO copyFilePO);
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "keyword",source = "keyword")
+    SearchFileContext params2Context(String keyword);
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "keyword",source = "searchFilePO.keyword")
+    SearchFileContext PO2ContextInSearchFile(SearchFilePO searchFilePO);
+
+    SearchFileInfoVO entity2VOInSearchFile(MPanUserFile mPanUserFile);
 }

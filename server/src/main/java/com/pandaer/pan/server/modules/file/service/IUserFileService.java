@@ -3,10 +3,7 @@ package com.pandaer.pan.server.modules.file.service;
 import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
-import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
-import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.file.vo.*;
 
 import java.util.List;
 
@@ -46,4 +43,6 @@ public interface IUserFileService extends IService<MPanUserFile> {
     void moveFile(MoveFileContext moveFileContext);
 
     void copyFile(CopyFileContext copyFileContext);
+
+    List<SearchFileInfoVO> searchFile(SearchFileContext searchFileContext);
 }

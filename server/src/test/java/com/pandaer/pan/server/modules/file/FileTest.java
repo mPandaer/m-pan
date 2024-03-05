@@ -10,10 +10,7 @@ import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.enums.FileType;
 import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
-import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
-import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
-import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.file.vo.*;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
@@ -640,6 +637,33 @@ public class FileTest {
         copyFileContext.setCopyFileIdList(Collections.singletonList(parentFolderId));
         userFileService.copyFile(copyFileContext);
 
+    }
+
+    //测试文件搜索
+    @Test
+    public void testSearchFile() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        //创建文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long parentFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(parentFolderId != null && parentFolderId > 0);
+
+        SearchFileContext searchFileContext = new SearchFileContext();
+        searchFileContext.setKeyword("新建");
+        searchFileContext.setUserId(userId);
+        List<SearchFileInfoVO> voList = userFileService.searchFile(searchFileContext);
+        Assert.assertTrue(voList != null && voList.size() == 1);
+
+        searchFileContext = new SearchFileContext();
+        searchFileContext.setKeyword("文件夹");
+        searchFileContext.setUserId(userId);
+        voList = userFileService.searchFile(searchFileContext);
+        Assert.assertTrue(voList != null && voList.isEmpty());
     }
 
 

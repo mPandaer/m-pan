@@ -11,10 +11,7 @@ import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
-import com.pandaer.pan.server.modules.file.vo.ChunkDataUploadVO;
-import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.pandaer.pan.server.modules.file.vo.UploadedFileChunkVO;
-import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.file.vo.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -204,6 +201,22 @@ public class FileController {
         CopyFileContext copyFileContext = fileConverter.PO2ContextInCopyFile(copyFilePO);
         userFileService.copyFile(copyFileContext);
         return Resp.success();
+    }
+
+    @ApiOperation(value = "文件搜索",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping("/file/search")
+    public Resp<List<SearchFileInfoVO>> copyFile(@Validated SearchFilePO searchFilePO){
+        SearchFileContext searchFileContext = fileConverter.PO2ContextInSearchFile(searchFilePO);
+        String fileType = searchFilePO.getFileType();
+        if (StringUtils.isNotBlank(fileType)) {
+            List<Integer> fileTypeList = Splitter.on(MPanConstants.COMMON_SEPARATOR).splitToList(fileType).stream()
+                    .map(Integer::valueOf).collect(Collectors.toList());
+            searchFileContext.setFileTypeList(fileTypeList);
+        }
+        List<SearchFileInfoVO> voList = userFileService.searchFile(searchFileContext);
+        return Resp.successAndData(voList);
     }
 
 
