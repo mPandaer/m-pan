@@ -219,6 +219,16 @@ public class FileController {
         return Resp.successAndData(voList);
     }
 
+    @ApiOperation(value = "文件面包屑导航",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping("/file/breadcrumb")
+    public Resp<List<BreadcrumbVO>> getBreadcrumb(@NotBlank(message = "文件ID不能为空") String fileId){
+        BreadcrumbContext breadcrumbContext = fileConverter.params2ContextInGetBreadcrumb(fileId);
+        List<BreadcrumbVO> breadcrumb = userFileService.getBreadcrumb(breadcrumbContext);
+        return Resp.successAndData(breadcrumb);
+    }
+
 
 
 

@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -664,6 +665,28 @@ public class FileTest {
         searchFileContext.setUserId(userId);
         voList = userFileService.searchFile(searchFileContext);
         Assert.assertTrue(voList != null && voList.isEmpty());
+    }
+
+    //测试获取面包屑
+    @Test
+    public void testGetBreadcrumb() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        //创建文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long parentFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(parentFolderId != null && parentFolderId > 0);
+
+        BreadcrumbContext breadcrumbContext = new BreadcrumbContext();
+        breadcrumbContext.setFileId(parentFolderId);
+        breadcrumbContext.setUserId(userId);
+        List<BreadcrumbVO> breadcrumb = userFileService.getBreadcrumb(breadcrumbContext);
+        System.out.println(breadcrumb);
+        Assert.assertTrue(breadcrumb != null && breadcrumb.size() == 2);
     }
 
 

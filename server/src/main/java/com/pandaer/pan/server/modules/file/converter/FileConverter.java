@@ -95,4 +95,9 @@ public interface FileConverter {
     SearchFileContext PO2ContextInSearchFile(SearchFilePO searchFilePO);
 
     SearchFileInfoVO entity2VOInSearchFile(MPanUserFile mPanUserFile);
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "fileId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(fileId))")
+    BreadcrumbContext params2ContextInGetBreadcrumb(String fileId);
+
 }

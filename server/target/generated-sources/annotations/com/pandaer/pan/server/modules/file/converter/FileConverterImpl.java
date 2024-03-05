@@ -1,5 +1,6 @@
 package com.pandaer.pan.server.modules.file.converter;
 
+import com.pandaer.pan.server.modules.file.context.BreadcrumbContext;
 import com.pandaer.pan.server.modules.file.context.ChunkDataUploadContext;
 import com.pandaer.pan.server.modules.file.context.CopyFileContext;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
@@ -38,7 +39,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-05T09:29:48+0800",
+    date = "2024-03-05T09:53:04+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -378,5 +379,19 @@ public class FileConverterImpl implements FileConverter {
         searchFileInfoVO.setUpdateTime( mPanUserFile.getUpdateTime() );
 
         return searchFileInfoVO;
+    }
+
+    @Override
+    public BreadcrumbContext params2ContextInGetBreadcrumb(String fileId) {
+        if ( fileId == null ) {
+            return null;
+        }
+
+        BreadcrumbContext breadcrumbContext = new BreadcrumbContext();
+
+        breadcrumbContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        breadcrumbContext.setFileId( com.pandaer.pan.core.utils.IdUtil.decrypt(fileId) );
+
+        return breadcrumbContext;
     }
 }

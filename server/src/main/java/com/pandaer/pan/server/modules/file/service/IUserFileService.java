@@ -45,4 +45,6 @@ public interface IUserFileService extends IService<MPanUserFile> {
     void copyFile(CopyFileContext copyFileContext);
 
     List<SearchFileInfoVO> searchFile(SearchFileContext searchFileContext);
+
+    List<BreadcrumbVO> getBreadcrumb(BreadcrumbContext breadcrumbContext);
 }

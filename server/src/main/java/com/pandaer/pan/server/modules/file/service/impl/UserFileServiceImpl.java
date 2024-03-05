@@ -298,6 +298,71 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         return voList;
     }
 
+
+    /**
+     * 校验文件是否存在
+     * 获取全部文件夹信息
+     * 拼接面包屑导航列表
+     * @param breadcrumbContext
+     * @return
+     */
+    @Override
+    public List<BreadcrumbVO> getBreadcrumb(BreadcrumbContext breadcrumbContext) {
+        MPanUserFile userFileEntity = checkUserFileExist(breadcrumbContext.getFileId(),breadcrumbContext.getUserId());
+        if (!Objects.equals(userFileEntity.getFolderFlag(),FileConstants.YES)) {
+            throw new MPanBusinessException("查询的fileId必须是一个文件夹");
+        }
+
+        List<MPanUserFile> folderList = getAllFolderList(breadcrumbContext.getUserId());
+        Map<Long, MPanUserFile> id2FileMap = folderList.stream().collect(Collectors.toMap(MPanUserFile::getFileId, entity -> entity));
+        LinkedList<BreadcrumbVO> breadcrumbList = new LinkedList<>();
+
+        MPanUserFile curFolder = userFileEntity;
+        while (curFolder!= null && curFolder.getFileId() != 0) {
+            BreadcrumbVO breadcrumbVO = new BreadcrumbVO();
+            breadcrumbVO.setFileId(curFolder.getFileId());
+            breadcrumbVO.setFilename(curFolder.getFilename());
+            breadcrumbList.addFirst(breadcrumbVO);
+            curFolder = id2FileMap.get(curFolder.getParentId());
+        }
+        return breadcrumbList;
+    }
+
+    /**
+     * 根据用户ID获取文件夹列表
+     * @param userId
+     * @return
+     */
+    private List<MPanUserFile> getAllFolderList(Long userId) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getUserId,userId)
+                .eq(MPanUserFile::getFolderFlag,FileConstants.YES)
+                .eq(MPanUserFile::getDelFlag,FileConstants.NO);
+        List<MPanUserFile> list = list(query);
+        if (list.isEmpty()) {
+            throw new MPanBusinessException("文件夹不存在");
+        }
+        return list;
+    }
+
+    /**
+     * 根据文件ID以及用户ID判断文件是否存在
+     * @param fileId
+     * @param userId
+     * @return
+     */
+    private MPanUserFile checkUserFileExist(Long fileId, Long userId) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getFileId,fileId)
+                .eq(MPanUserFile::getUserId,userId)
+                .eq(MPanUserFile::getDelFlag,FileConstants.NO);
+        MPanUserFile userFileEntity = getOne(query);
+        if (Objects.isNull(userFileEntity)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        return userFileEntity;
+    }
+
     /**
      * 发布文件搜索事件
      * 1. 主要作用是为保存用户搜索历史提供一个触发点
