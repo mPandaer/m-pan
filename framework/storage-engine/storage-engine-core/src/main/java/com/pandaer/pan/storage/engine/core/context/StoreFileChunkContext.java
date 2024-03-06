@@ -16,4 +16,10 @@ public class StoreFileChunkContext {
     private Long currentChunkSize;
 
     private String realPath;
+
+    private Integer totalChunks;
+
+    private Long userId;
+
+    private String filename;
 }

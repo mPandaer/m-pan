@@ -1,0 +1,30 @@
+{
+  "properties": [
+    {
+      "name": "pan.storage.engine.oss.access-key-id",
+      "type": "java.lang.String",
+      "description": "阿里云OSS访问密钥ID"
+    },
+    {
+      "name": "pan.storage.engine.oss.access-key-secret",
+      "type": "java.lang.String",
+      "description": "阿里云OSS访问密钥Secret"
+    },
+    {
+      "name": "pan.storage.engine.oss.endpoint",
+      "type": "java.lang.String",
+      "description": "阿里云OSS访问域名"
+    },
+    {
+      "name": "pan.storage.engine.oss.bucket-name",
+      "type": "java.lang.String",
+      "description": "阿里云OSS存储桶名称"
+    },
+    {
+      "name": "pan.storage.engine.oss.auto-create-bucket",
+      "type": "java.lang.Boolean",
+      "description": "是否自动创建存储桶",
+      "defaultValue": "true"
+    }
+  ]
+}

@@ -16,4 +16,6 @@ public class MergeChunkContext {
     private List<String> chunkPathList;
 
     private String realFilePath;
+
+    private Long userId;
 }

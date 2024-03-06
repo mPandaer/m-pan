@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-05T09:53:04+0800",
+    date = "2024-03-06T13:44:21+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -233,6 +233,7 @@ public class FileConverterImpl implements FileConverter {
         saveFileChunkContext.setFileData( context.getFileData() );
         saveFileChunkContext.setUserId( context.getUserId() );
         saveFileChunkContext.setTotalChunks( context.getTotalChunks() );
+        saveFileChunkContext.setFilename( context.getFilename() );
 
         return saveFileChunkContext;
     }
@@ -248,6 +249,9 @@ public class FileConverterImpl implements FileConverter {
         storeFileChunkContext.setIdentifier( saveFileChunkContext.getIdentifier() );
         storeFileChunkContext.setCurrentChunkNumber( saveFileChunkContext.getCurrentChunkNumber() );
         storeFileChunkContext.setCurrentChunkSize( saveFileChunkContext.getCurrentChunkSize() );
+        storeFileChunkContext.setTotalChunks( saveFileChunkContext.getTotalChunks() );
+        storeFileChunkContext.setUserId( saveFileChunkContext.getUserId() );
+        storeFileChunkContext.setFilename( saveFileChunkContext.getFilename() );
 
         return storeFileChunkContext;
     }

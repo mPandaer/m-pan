@@ -115,6 +115,7 @@ public class FileChunkServiceImpl extends ServiceImpl<MPanFileChunkMapper, MPanF
         mergeChunkContext.setFilename(context.getFilename());
         mergeChunkContext.setTotalSize(context.getTotalSize());
         mergeChunkContext.setIdentifier(context.getIdentifier());
+        mergeChunkContext.setUserId(context.getUserId());
         List<String> pathList = context.getChunkList().stream()
                 .sorted(Comparator.comparing(MPanFileChunk::getChunkNumber))
                 .map(MPanFileChunk::getRealPath).collect(Collectors.toList());

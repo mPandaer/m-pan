@@ -1,5 +1,7 @@
 package com.pandaer.pan.cache.redis.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.cache.CacheManager;
@@ -26,6 +28,9 @@ public class RedisCacheConfig {
     @Bean
     public RedisTemplate<String,Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         Jackson2JsonRedisSerializer<Object> valueSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        valueSerializer.setObjectMapper(objectMapper);
         StringRedisSerializer keySerializer = new StringRedisSerializer();
         RedisTemplate<String,Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(keySerializer);
@@ -38,9 +43,13 @@ public class RedisCacheConfig {
 
     @Bean
     public CacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
+        Jackson2JsonRedisSerializer<Object> valueSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        valueSerializer.setObjectMapper(objectMapper);
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<>(Object.class)));
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer));
 
         RedisCacheManager redisCacheManager = RedisCacheManager.builder(RedisCacheWriter.lockingRedisCacheWriter(redisConnectionFactory))
                 .cacheDefaults(redisCacheConfiguration)

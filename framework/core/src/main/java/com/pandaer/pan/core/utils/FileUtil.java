@@ -145,4 +145,27 @@ public class FileUtil {
             throw new MPanBusinessException("文件写入输出流失败");
         }
     }
+
+    public static String getFileExtName(String filename) {
+        if (StringUtils.isBlank(filename) || filename.lastIndexOf(MPanConstants.POINT_STR) == -1) {
+            return MPanConstants.EMPTY_STR;
+        }
+        int lastIndex = filename.lastIndexOf(MPanConstants.POINT_STR);
+        return filename.substring(lastIndex + MPanConstants.ONE_INT);
+    }
+
+    public static void writeStream2Stream(InputStream objectContent, OutputStream outputStream) {
+        byte[] buffer = new byte[1024];
+        int len;
+        try {
+            while ((len = objectContent.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, len);
+            }
+            outputStream.flush();
+            outputStream.close();
+            objectContent.close();
+        } catch (IOException e) {
+            throw new MPanBusinessException("文件写入输出流失败");
+        }
+    }
 }

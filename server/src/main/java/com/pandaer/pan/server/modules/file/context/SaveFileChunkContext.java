@@ -23,6 +23,8 @@ public class SaveFileChunkContext {
 
     private Integer merge;
 
+    private String filename;
+
 
     private String realPath;
 }

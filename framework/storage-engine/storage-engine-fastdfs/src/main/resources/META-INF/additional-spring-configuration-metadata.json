@@ -1,0 +1,22 @@
+{
+  "properties": [
+    {
+      "name": "pan.storage.engine.fastdfs.connect-timeout",
+      "type": "java.lang.Integer",
+      "description": "fastdfs连接超时时间",
+      "defaultValue": 600
+    },
+    {
+      "name": "pan.storage.engine.fastdfs.connect-timeout.tracker-list",
+      "type": "java.util.List",
+      "description": "跟踪服务器地址列表",
+      "defaultValue": []
+    },
+    {
+      "name": "pan.storage.engine.fastdfs.connect-timeout.group",
+      "type": "java.lang.String",
+      "description": "组名称",
+      "defaultValue": "group1"
+    }
+  ]
+}

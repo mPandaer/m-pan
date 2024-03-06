@@ -23,6 +23,11 @@
             <artifactId>m-pan-storage-engine-core</artifactId>
             <version>1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.tobato</groupId>
+            <artifactId>fastdfs-client</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
