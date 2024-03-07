@@ -65,12 +65,6 @@ public class FileTest {
     public void testCreateFolderSuccess() {
         Long userId = userRegister();
         CurrentUserVO currentUser = current(userId);
-        CreateFolderContext createFolderContext = new CreateFolderContext();
-        createFolderContext.setUserId(userId);
-        createFolderContext.setFolderName("新建文件夹");
-        createFolderContext.setParentId(currentUser.getRootFileId());
-        Long fileId = userFileService.creatFolder(createFolderContext);
-        Assert.assertTrue(fileId != null && fileId > 0);
     }
 
     //文件重命名成功

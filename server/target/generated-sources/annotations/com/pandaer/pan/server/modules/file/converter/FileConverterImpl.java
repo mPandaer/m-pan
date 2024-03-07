@@ -30,6 +30,8 @@ import com.pandaer.pan.server.modules.file.po.UpdateFilenamePO;
 import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.SearchFileInfoVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
+import com.pandaer.pan.server.modules.recycle.po.RestoreFilePO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-07T10:15:53+0800",
+    date = "2024-03-07T11:28:00+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -397,5 +399,19 @@ public class FileConverterImpl implements FileConverter {
         breadcrumbContext.setFileId( com.pandaer.pan.core.utils.IdUtil.decrypt(fileId) );
 
         return breadcrumbContext;
+    }
+
+    @Override
+    public RestoreFileContext PO2ContextInRestoreFile(RestoreFilePO restoreFilePO) {
+        if ( restoreFilePO == null ) {
+            return null;
+        }
+
+        RestoreFileContext restoreFileContext = new RestoreFileContext();
+
+        restoreFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        restoreFileContext.setFileIdList( restoreFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
+
+        return restoreFileContext;
     }
 }

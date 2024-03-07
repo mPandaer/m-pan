@@ -88,9 +88,15 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     @Override
     public List<UserFileVO> getFileList(QueryFileListContext context) {
         LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
-        query.eq(MPanUserFile::getParentId,context.getParentId())
-                .eq(MPanUserFile::getUserId,context.getUserId())
-                .eq(MPanUserFile::getDelFlag,context.getDelFlag());
+        if (context.getParentId() != null) {
+            query.eq(MPanUserFile::getParentId,context.getParentId());
+        }
+        if (context.getUserId() != null) {
+            query.eq(MPanUserFile::getUserId,context.getUserId());
+        }
+        if (context.getDelFlag() != null) {
+            query.eq(MPanUserFile::getDelFlag,context.getDelFlag());
+        }
         if (context.getFileTypeList() != null) {
             query.in(MPanUserFile::getFileType,context.getFileTypeList());
         }

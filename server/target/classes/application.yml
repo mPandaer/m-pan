@@ -39,12 +39,12 @@ mybatis-plus:
 #        tracker-list:
 #          - 119.45.54.2:22122
 #        connect-timeout: 10000
-pan:
-  storage:
-    engine:
-      oss:
-        endpoint: oss-cn-chengdu.aliyuncs.com
-        bucket-name: pandaer-dev-01
-        access-key-id: LTAI5t8dN7X2QnvJ7QL9JzQB
-        access-key-secret: 0dZEZ5T3eXQ9jKeLUnAau108UYIVfk
-        auto-create-bucket: true
+#pan:
+#  storage:
+#    engine:
+#      oss:
+#        endpoint: oss-cn-chengdu.aliyuncs.com
+#        bucket-name: pandaer-dev-01
+#        access-key-id:
+#        access-key-secret:
+#        auto-create-bucket: true

@@ -6,6 +6,8 @@ import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.SearchFileInfoVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
+import com.pandaer.pan.server.modules.recycle.po.RestoreFilePO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
 import org.mapstruct.Mapper;
@@ -100,4 +102,7 @@ public interface FileConverter {
     @Mapping(target = "fileId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(fileId))")
     BreadcrumbContext params2ContextInGetBreadcrumb(String fileId);
 
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "fileIdList",expression = "java(restoreFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
+    RestoreFileContext PO2ContextInRestoreFile(RestoreFilePO restoreFilePO);
 }
