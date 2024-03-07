@@ -30,7 +30,9 @@ import com.pandaer.pan.server.modules.file.po.UpdateFilenamePO;
 import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.SearchFileInfoVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
+import com.pandaer.pan.server.modules.recycle.po.ActualDeleteFilePO;
 import com.pandaer.pan.server.modules.recycle.po.RestoreFilePO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -41,7 +43,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-07T11:28:00+0800",
+    date = "2024-03-07T12:30:14+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -413,5 +415,19 @@ public class FileConverterImpl implements FileConverter {
         restoreFileContext.setFileIdList( restoreFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
 
         return restoreFileContext;
+    }
+
+    @Override
+    public ActualDeleteFileContext PO2ContextInActualDeleteFile(ActualDeleteFilePO actualDeleteFilePO) {
+        if ( actualDeleteFilePO == null ) {
+            return null;
+        }
+
+        ActualDeleteFileContext actualDeleteFileContext = new ActualDeleteFileContext();
+
+        actualDeleteFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        actualDeleteFileContext.setFileIdList( actualDeleteFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
+
+        return actualDeleteFileContext;
     }
 }

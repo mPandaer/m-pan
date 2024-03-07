@@ -684,6 +684,43 @@ public class FileTest {
     }
 
 
+    /**
+     * 测试获取全部文件 无嵌套
+     * @return
+     */
+    @Test
+    public void testFindAllRecords() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+
+        //创建文件夹父文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long parentFolderId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(parentFolderId != null && parentFolderId > 0);
+
+        //创建文件夹子文件夹
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1-1");
+        createFolderContext.setParentId(parentFolderId);
+        Long childId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(childId != null && childId > 0);
+
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹-1-1-1");
+        createFolderContext.setParentId(childId);
+        Long childChildId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(childChildId != null && childChildId > 0);
+
+        //查处所有文件
+        MPanUserFile testFolder = userFileService.getById(parentFolderId);
+        List<MPanUserFile> allRecords = userFileService.findAllRecords(Collections.singletonList(testFolder));
+        Assert.assertTrue(allRecords != null && allRecords.size() == 3);
+    }
 
 
 

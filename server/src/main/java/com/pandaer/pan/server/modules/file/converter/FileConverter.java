@@ -6,7 +6,9 @@ import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.pandaer.pan.server.modules.file.vo.SearchFileInfoVO;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
+import com.pandaer.pan.server.modules.recycle.po.ActualDeleteFilePO;
 import com.pandaer.pan.server.modules.recycle.po.RestoreFilePO;
 import com.pandaer.pan.storage.engine.core.context.StoreFileChunkContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -105,4 +107,10 @@ public interface FileConverter {
     @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
     @Mapping(target = "fileIdList",expression = "java(restoreFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
     RestoreFileContext PO2ContextInRestoreFile(RestoreFilePO restoreFilePO);
+
+
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "fileIdList",expression = "java(actualDeleteFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
+    ActualDeleteFileContext PO2ContextInActualDeleteFile(ActualDeleteFilePO actualDeleteFilePO);
+
 }

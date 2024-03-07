@@ -5,8 +5,10 @@ import com.pandaer.pan.core.response.Resp;
 import com.pandaer.pan.server.common.utils.UserIdUtil;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
+import com.pandaer.pan.server.modules.recycle.po.ActualDeleteFilePO;
 import com.pandaer.pan.server.modules.recycle.po.RestoreFilePO;
 import com.pandaer.pan.server.modules.recycle.service.IRecycleService;
 import io.swagger.annotations.Api;
@@ -47,13 +49,25 @@ public class RecycleController {
 
     @ApiOperation(
             value = "还原文件",
-            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     @PutMapping("recycle/restore")
     public Resp<Object> restore(@Validated @RequestBody RestoreFilePO restoreFilePO) {
         RestoreFileContext restoreFileContext = fileConverter.PO2ContextInRestoreFile(restoreFilePO);
         recycleService.restore(restoreFileContext);
+        return Resp.success();
+    }
+
+    @ApiOperation(
+            value = "彻底删除文件",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @DeleteMapping("recycle/delete")
+    public Resp<Object> actualDelete(@Validated @RequestBody ActualDeleteFilePO actualDeleteFilePO) {
+        ActualDeleteFileContext actualDeleteFileContext = fileConverter.PO2ContextInActualDeleteFile(actualDeleteFilePO);
+        recycleService.actualDelete(actualDeleteFileContext);
         return Resp.success();
     }
 

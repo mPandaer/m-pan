@@ -334,6 +334,34 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         return breadcrumbList;
     }
 
+
+    /**
+     * 将嵌套的文件列表转换为不嵌套的文件列表
+     * 输入：要删除的文件以及文件夹
+     * 输出：将文件夹内的所有文件添加的列表中
+     * @param nestRecords
+     * @return
+     */
+    @Override
+    public List<MPanUserFile> findAllRecords(List<MPanUserFile> nestRecords) {
+        List<MPanUserFile> allRecords = new ArrayList<>();
+        for (MPanUserFile record : nestRecords) {
+            allRecords.add(record);
+            if (Objects.equals(record.getFolderFlag(),FileConstants.YES)) {
+                LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+                query.eq(MPanUserFile::getParentId,record.getFileId())
+                        .eq(MPanUserFile::getUserId,record.getUserId());
+                List<MPanUserFile> childrenList = list(query);
+                if (CollectionUtil.isNotEmpty(childrenList)) {
+                    List<MPanUserFile> list = findAllRecords(childrenList);
+                    allRecords.addAll(list);
+                }
+
+            }
+        }
+        return allRecords;
+    }
+
     /**
      * 根据用户ID获取文件夹列表
      * @param userId

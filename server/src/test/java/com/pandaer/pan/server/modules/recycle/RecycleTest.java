@@ -6,6 +6,7 @@ import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.context.DeleteFileWithRecycleContext;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
 import com.pandaer.pan.server.modules.recycle.service.IRecycleService;
@@ -301,11 +302,69 @@ public class RecycleTest {
     }
 
 
+    /**
+     * 测试文件删除 成功
+     */
+    @Test
+    public void testActualDeleteFileSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO current = current(userId);
+
+        //创建文件夹01
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹");
+        createFolderContext.setParentId(current.getRootFileId());
+        Long fileId1 = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId1 != null && fileId1 > 0);
+
+        //删除文件夹01
+        DeleteFileWithRecycleContext deleteFileWithRecycleContext = new DeleteFileWithRecycleContext();
+        deleteFileWithRecycleContext.setFileIdList(Collections.singletonList(fileId1));
+        deleteFileWithRecycleContext.setUserId(userId);
+        userFileService.deleteFileWithRecycle(deleteFileWithRecycleContext);
+
+        //彻底删除文件
+        ActualDeleteFileContext actualDeleteFileContext = new ActualDeleteFileContext();
+        actualDeleteFileContext.setUserId(userId);
+        actualDeleteFileContext.setFileIdList(Collections.singletonList(fileId1));
+        recycleService.actualDelete(actualDeleteFileContext);
+    }
+
+    /**
+     * 测试文件删除 失败 用户无权限
+     */
+    @Test(expected = MPanBusinessException.class)
+    public void testActualDeleteFileFail() {
+        Long userId = userRegister();
+        CurrentUserVO current = current(userId);
+
+        //创建文件夹01
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹");
+        createFolderContext.setParentId(current.getRootFileId());
+        Long fileId1 = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId1 != null && fileId1 > 0);
+
+        //删除文件夹01
+        DeleteFileWithRecycleContext deleteFileWithRecycleContext = new DeleteFileWithRecycleContext();
+        deleteFileWithRecycleContext.setFileIdList(Collections.singletonList(fileId1));
+        deleteFileWithRecycleContext.setUserId(userId);
+        userFileService.deleteFileWithRecycle(deleteFileWithRecycleContext);
+
+        //彻底删除文件
+        ActualDeleteFileContext actualDeleteFileContext = new ActualDeleteFileContext();
+        actualDeleteFileContext.setUserId(userId + 1);
+        actualDeleteFileContext.setFileIdList(Collections.singletonList(fileId1));
+        recycleService.actualDelete(actualDeleteFileContext);
+
+    }
 
 
 
 
-/*-------------------------------------------------------------------------private-------------------------------------------------------------------------*/
+    /*-------------------------------------------------------------------------private-------------------------------------------------------------------------*/
     private static final String USERNAME = "bobo";
     private static final String PASSWORD = "12345678";
     private static final String QUESTION = "question";

@@ -47,4 +47,6 @@ public interface IUserFileService extends IService<MPanUserFile> {
     List<SearchFileInfoVO> searchFile(SearchFileContext searchFileContext);
 
     List<BreadcrumbVO> getBreadcrumb(BreadcrumbContext breadcrumbContext);
+
+    List<MPanUserFile> findAllRecords(List<MPanUserFile> nestRecords);
 }

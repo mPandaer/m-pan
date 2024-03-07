@@ -1,13 +1,16 @@
 package com.pandaer.pan.server.modules.recycle.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.server.common.event.file.ActualDeleteFileEvent;
 import com.pandaer.pan.server.common.event.file.RestoreFileEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
 import com.pandaer.pan.server.modules.recycle.service.IRecycleService;
@@ -47,6 +50,7 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
      * 2. 检查文件是否可以还原
      * 3. 修改文件记录的删除标志
      * 4. 执行还原的后置操作
+     *
      * @param restoreFileContext
      */
     @Override
@@ -58,8 +62,70 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
     }
 
     /**
+     * 批量彻底删除文件
+     * 功能实现
+     * 1. 检查操作权限以及文件的合法性
+     * 2. 查找的需要删除的全部文件列表
+     * 3. 删除物理文件，以及文件记录
+     * 4. 发布文件彻底删除事件
+     *
+     * @param actualDeleteFileContext
+     */
+    @Override
+    public void actualDelete(ActualDeleteFileContext actualDeleteFileContext) {
+        checkDeleteFilePermission(actualDeleteFileContext);
+        findAllRecords(actualDeleteFileContext);
+        doDelete(actualDeleteFileContext);
+        AfterDelete(actualDeleteFileContext);
+    }
+
+    /**
+     * 文件删除后的操作
+     * 1. 发布文件彻底删除事件
+     * @param actualDeleteFileContext
+     */
+    private void AfterDelete(ActualDeleteFileContext actualDeleteFileContext) {
+        ActualDeleteFileEvent event = new ActualDeleteFileEvent(this, actualDeleteFileContext.getAllRecords());
+        applicationContext.publishEvent(event);
+    }
+
+    /**
+     * 执行删除的动作
+     * @param actualDeleteFileContext
+     */
+    private void doDelete(ActualDeleteFileContext actualDeleteFileContext) {
+        List<MPanUserFile> allRecords = actualDeleteFileContext.getAllRecords();
+        iUserFileService.removeByIds(allRecords.stream().map(MPanUserFile::getFileId).collect(Collectors.toList()));
+    }
+
+
+    /**
+     * 递归查找所有的要删除的文件记录
+     * @param actualDeleteFileContext
+     */
+    private void findAllRecords(ActualDeleteFileContext actualDeleteFileContext) {
+        List<MPanUserFile> nestRecords = actualDeleteFileContext.getNestRecords();
+        List<MPanUserFile> allRecords = iUserFileService.findAllRecords(nestRecords);
+        actualDeleteFileContext.setAllRecords(allRecords);
+    }
+
+    private void checkDeleteFilePermission(ActualDeleteFileContext actualDeleteFileContext) {
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getUserId, actualDeleteFileContext.getUserId())
+                .eq(MPanUserFile::getDelFlag, FileConstants.YES)
+                .in(MPanUserFile::getFileId, actualDeleteFileContext.getFileIdList());
+        List<MPanUserFile> list = iUserFileService.list(query);
+        if (CollectionUtil.isEmpty(list) || list.size() != actualDeleteFileContext.getFileIdList().size()) {
+            throw new MPanBusinessException("文件列表中存在非法文件");
+        }
+        actualDeleteFileContext.setNestRecords(list);
+    }
+
+
+    /**
      * 文件还原后的操作
      * 1. 发布文件还原事件
+     *
      * @param restoreFileContext
      */
     private void AfterRestore(RestoreFileContext restoreFileContext) {
@@ -70,6 +136,7 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
 
     /**
      * 执行还原的动作
+     *
      * @param restoreFileContext
      */
     private void doRestore(RestoreFileContext restoreFileContext) {
@@ -89,6 +156,7 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
      * 不允许还原的两种情况
      * 1. 要还原的文件列表中存在 同一目录下同名文件
      * 2. 要还原的文件的名字已经在该文件的父目录中存在
+     *
      * @param restoreFileContext
      */
     private void checkRestoreFilename(RestoreFileContext restoreFileContext) {
@@ -111,6 +179,7 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
 
     /**
      * 检查文件和用户的合法性
+     *
      * @param restoreFileContext
      */
     private void checkRestorePermission(RestoreFileContext restoreFileContext) {

@@ -1,6 +1,7 @@
 package com.pandaer.pan.server.modules.recycle.service;
 
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
 
@@ -22,4 +23,10 @@ public interface IRecycleService {
      */
     void restore(RestoreFileContext restoreFileContext);
 
+
+    /**
+     * 批量彻底删除文件
+     * @param actualDeleteFileContext
+     */
+    void actualDelete(ActualDeleteFileContext actualDeleteFileContext);
 }
