@@ -44,7 +44,7 @@ pan:
     engine:
       oss:
         endpoint: oss-cn-chengdu.aliyuncs.com
-        bucket-name: pandaer-dev
-        access-key-id: ""
-        access-key-secret: ""
+        bucket-name: pandaer-dev-01
+        access-key-id: LTAI5t8dN7X2QnvJ7QL9JzQB
+        access-key-secret: 0dZEZ5T3eXQ9jKeLUnAau108UYIVfk
         auto-create-bucket: true
