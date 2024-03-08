@@ -5,6 +5,13 @@
       "type": "java.lang.Integer",
       "description": "分片文件过期时间",
       "defaultValue": 1
+    },
+    {
+      "name": "pan.server.share-prefix",
+      "type": "java.lang.String",
+      "description": "分享链接前缀",
+      "defaultValue": "http://localhost:serverPort/share/"
     }
+
   ]
 }
