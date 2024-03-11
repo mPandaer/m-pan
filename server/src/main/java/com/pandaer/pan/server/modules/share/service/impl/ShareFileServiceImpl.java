@@ -1,5 +1,6 @@
 package com.pandaer.pan.server.modules.share.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.modules.share.context.BatchSaveShareFileContext;
@@ -8,10 +9,8 @@ import com.pandaer.pan.server.modules.share.service.IShareFileService;
 import com.pandaer.pan.server.modules.share.mapper.MPanShareFileMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
 * @author pandaer
@@ -42,6 +41,31 @@ public class ShareFileServiceImpl extends ServiceImpl<MPanShareFileMapper, MPanS
         if (!saveBatch(list)) {
             throw new RuntimeException("批量保存分享记录与分享文件关联关系失败");
         }
+    }
+
+    /**
+     * 通过文件列表集合获取到关联的分享记录ID
+     * @param allFileIdList
+     * @return
+     */
+    @Override
+    public Set<Long> getShareIdListByFileId(List<Long> allFileIdList) {
+        LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
+        query.in(MPanShareFile::getFileId,allFileIdList);
+        List<MPanShareFile> shareFileList = list(query);
+        return shareFileList.stream().map(MPanShareFile::getShareId).collect(Collectors.toSet());
+    }
+
+    /**
+     * 根据shareId获取对应的文件Id
+     * @param id
+     * @return
+     */
+    @Override
+    public List<Long> getFileIdListInCurShare(Long id) {
+        LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanShareFile::getShareId,id);
+        return list(query).stream().map(MPanShareFile::getFileId).collect(Collectors.toList());
     }
 }
 

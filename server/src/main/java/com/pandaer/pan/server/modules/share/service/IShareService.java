@@ -1,5 +1,6 @@
 package com.pandaer.pan.server.modules.share.service;
 
+import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.domain.MPanShare;
@@ -78,4 +79,10 @@ public interface IShareService extends IService<MPanShare> {
      * @param context
      */
     void shareDownload(ShareDownloadContext context);
+
+    /**
+     * 根据文件列表刷新分享的状态信息
+     * @param allDeleteFileList
+     */
+    void refreshShareStatus(List<MPanUserFile> allDeleteFileList);
 }

@@ -14,11 +14,6 @@ public class DeleteFileWithRecycleEvent extends ApplicationEvent {
     private final List<Long> deleteFileIdList;
 
 
-    /**
-     * Create a new ApplicationEvent.
-     *
-     * @param source the object on which the event initially occurred (never {@code null})
-     */
     public DeleteFileWithRecycleEvent(Object source,List<Long> deleteFileIdList) {
         super(source);
         this.deleteFileIdList = deleteFileIdList;

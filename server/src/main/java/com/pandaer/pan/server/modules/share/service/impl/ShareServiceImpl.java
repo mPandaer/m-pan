@@ -10,10 +10,10 @@ import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.UUIDUtil;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
+import com.pandaer.pan.server.common.event.log.ErrorLogEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CopyFileContext;
 import com.pandaer.pan.server.modules.file.context.FileDownloadContext;
-import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
@@ -32,8 +32,10 @@ import com.pandaer.pan.server.modules.share.vo.*;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Test;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +49,7 @@ import java.util.stream.Collectors;
 */
 @Service
 public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
-    implements IShareService {
+    implements IShareService, ApplicationContextAware {
 
 
     @Autowired
@@ -67,6 +69,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     @Autowired
     private FileConverter fileConverter;
+
+    private ApplicationContext applicationContext;
 
 
     /**
@@ -217,6 +221,64 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         checkFileIdInShare(context.getShareId(),Lists.newArrayList(context.getFileId()));
         doShareDownload(context);
 
+    }
+
+    /**
+     * 根据文件列表刷新分享的状态信息
+     * 具体的逻辑
+     * 1. 根据文件ID获取到可能影响的shareId
+     * 2. 具体判断文件是否真正的影响到了分享状态
+     * @param allFileList
+     */
+    @Override
+    public void refreshShareStatus(List<MPanUserFile> allFileList) {
+        List<Long> allFileIdList = allFileList.stream().map(MPanUserFile::getFileId).collect(Collectors.toList());
+        //全部可能受影响的分享Id
+        Set<Long> shareIdList = shareFileService.getShareIdListByFileId(allFileIdList);
+        //判断是否真的受到了影响
+        shareIdList.forEach(id -> {
+            if (isFileDeletedInShare(id)) {
+                doChangeShareStatus(id,ShareStatusEnum.FILE_DELETED.getCode());
+            }else {
+                doChangeShareStatus(id,ShareStatusEnum.NORMAL.getCode());
+            }
+        });
+    }
+
+    /**
+     * 根据分享Id改变分享的状态
+     * @param id
+     */
+    private void doChangeShareStatus(Long id,Integer shareStatus) {
+        MPanShare share = getById(id);
+        share.setShareStatus(shareStatus);
+        if (!updateById(share)) {
+            ErrorLogEvent event = new ErrorLogEvent(this, "更新分享状态失败 分享Id为: " + id, MPanConstants.ZERO_LONG);
+            applicationContext.publishEvent(event);
+        }
+    }
+
+    /**
+     * 根据分享Id判断当前的分享是否会受到了当前事件的影响
+     * @param id
+     * @return
+     */
+    private boolean isFileDeletedInShare(Long id) {
+        List<Long> fileIdList = shareFileService.getFileIdListInCurShare(id);
+        //判断这些文件是否存在有被删除
+        return checkFileDeletedWithEvent(fileIdList);
+    }
+
+    /**
+     * 检查这些文件是否被删除
+     * @param fileIdList
+     * @return
+     */
+    private boolean checkFileDeletedWithEvent(List<Long> fileIdList) {
+        List<MPanUserFile> userFileList = userFileService.listByIds(fileIdList);
+        List<MPanUserFile> allRecords = userFileService.findAllRecords(userFileList);
+        Set<Integer> delFlagSet = allRecords.stream().map(MPanUserFile::getDelFlag).collect(Collectors.toSet());
+        return delFlagSet.size() > 1 || delFlagSet.contains(FileConstants.YES);
     }
 
     /**
@@ -576,6 +638,11 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         }
 
         return share;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }
 
