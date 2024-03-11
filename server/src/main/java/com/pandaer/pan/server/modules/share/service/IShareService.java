@@ -65,4 +65,11 @@ public interface IShareService extends IService<MPanShare> {
      * @return
      */
     List<UserFileVO> listChildFile(QueryChildFileListContext context);
+
+
+    /**
+     * 保存文件列表到我的网盘
+     * @param context
+     */
+    void saveFileList(SaveShareFileContext context);
 }

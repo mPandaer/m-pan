@@ -6,9 +6,11 @@ import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.context.BatchSaveShareFileContext;
 import com.pandaer.pan.server.modules.share.context.CancelSharesContext;
 import com.pandaer.pan.server.modules.share.context.CreateShareUrlContext;
+import com.pandaer.pan.server.modules.share.context.SaveShareFileContext;
 import com.pandaer.pan.server.modules.share.domain.MPanShare;
 import com.pandaer.pan.server.modules.share.po.CancelSharesPO;
 import com.pandaer.pan.server.modules.share.po.CreateShareUrlPO;
+import com.pandaer.pan.server.modules.share.po.SaveShareFilePO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -34,4 +36,11 @@ public interface ShareConverter {
     CancelSharesContext PO2ContextInCancelShares(CancelSharesPO cancelSharesPO);
 
     UserFileVO entity2VOInGetDetailInfo(MPanUserFile mPanUserFile);
+
+
+    @Mapping(target = "shareId",expression = "java(context.getShareRecord().getShareId())")
+    @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
+    @Mapping(target = "fileIdList",expression = "java(saveShareFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
+    @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(saveShareFilePO.getTargetParentId()))")
+    SaveShareFileContext PO2ContextInSaveFileList(SaveShareFilePO saveShareFilePO);
 }

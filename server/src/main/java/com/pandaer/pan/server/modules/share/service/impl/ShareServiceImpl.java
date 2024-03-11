@@ -11,6 +11,7 @@ import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.UUIDUtil;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
+import com.pandaer.pan.server.modules.file.context.CopyFileContext;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
@@ -35,10 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -189,6 +187,65 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     public List<UserFileVO> listChildFile(QueryChildFileListContext context) {
         checkParentIdAndShareId(context);
         return getChildFileList(context);
+    }
+
+    /**
+     * 保存文件列表到我的网盘
+     * 具体业务逻辑
+     * 1.校验文件ID,分享ID,以及文件与分享ID之间的对应关系，以及目标文件夹是否存在
+     * 2.根据文件ID获取到全部的文件ID
+     * 3.保存文件与用户之间的关系记录
+     * @param context
+     */
+    @Override
+    public void saveFileList(SaveShareFileContext context) {
+        checkShareAndFileList(context);
+        checkTargetParent(context);
+        doSaveFileList(context);
+    }
+
+    /**
+     * 1.根据文件ID获取到全部的文件ID
+     * 2.保存文件与用户之间的关系记录
+     * @param context
+     */
+    private void doSaveFileList(SaveShareFileContext context) {
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setCopyFileIdList(context.getFileIdList());
+        copyFileContext.setTargetParentId(context.getTargetParentId());
+        copyFileContext.setUserId(context.getUserId());
+        userFileService.copyFile(copyFileContext);
+    }
+
+    /**
+     * 校验目标文件夹是否存在
+     * @param context
+     */
+    private void checkTargetParent(SaveShareFileContext context) {
+        Long targetParentId = context.getTargetParentId();
+        MPanUserFile targetFolder = userFileService.getById(targetParentId);
+        if (Objects.isNull(targetFolder) || Objects.equals(targetFolder.getFolderFlag(),FileConstants.NO)) {
+            throw new MPanBusinessException("目标路径不存在或者不是一个目录");
+        }
+    }
+
+    /**
+     * 1.校验文件ID,分享ID,以及文件与分享ID之间的对应关系
+     * @param context
+     */
+    private void checkShareAndFileList(SaveShareFileContext context) {
+        List<Long> fileIdList = context.getFileIdList();
+        if (Objects.isNull(fileIdList) || fileIdList.isEmpty()) {
+            throw new MPanBusinessException("文件列表为空");
+        }
+        Long shareId = context.getShareId();
+        LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanShareFile::getShareId,shareId)
+                .in(MPanShareFile::getFileId,fileIdList);
+        int res = shareFileService.count(query);
+        if (fileIdList.size() != res) {
+            throw new MPanBusinessException("要保存的文件列表存在不合法文件");
+        }
     }
 
     private List<UserFileVO> getChildFileList(QueryChildFileListContext context) {

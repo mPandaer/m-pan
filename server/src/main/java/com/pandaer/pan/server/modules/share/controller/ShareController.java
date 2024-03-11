@@ -13,6 +13,7 @@ import com.pandaer.pan.server.modules.share.converter.ShareConverter;
 import com.pandaer.pan.server.modules.share.po.CancelSharesPO;
 import com.pandaer.pan.server.modules.share.po.CheckShareCodePO;
 import com.pandaer.pan.server.modules.share.po.CreateShareUrlPO;
+import com.pandaer.pan.server.modules.share.po.SaveShareFilePO;
 import com.pandaer.pan.server.modules.share.service.IShareService;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlVO;
@@ -131,5 +132,17 @@ public class ShareController {
         context.setShareId(ShareIdUtil.getShareId());
         List<UserFileVO> vo = shareService.listChildFile(context);
         return Resp.successAndData(vo);
+    }
+
+    @ApiOperation(value = "将分享文件保存到我的网盘",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("share/file/save")
+    @NeedShareCode
+    public Resp<Object> saveFileList(@Validated @RequestBody SaveShareFilePO saveShareFilePO) {
+        SaveShareFileContext context = shareConverter.PO2ContextInSaveFileList(saveShareFilePO);
+        shareService.saveFileList(context);
+        return Resp.success();
     }
 }
