@@ -7,6 +7,7 @@ import com.pandaer.pan.server.common.annotation.LoginIgnore;
 import com.pandaer.pan.server.common.annotation.NeedShareCode;
 import com.pandaer.pan.server.common.utils.ShareIdUtil;
 import com.pandaer.pan.server.common.utils.UserIdUtil;
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.converter.ShareConverter;
 import com.pandaer.pan.server.modules.share.po.CancelSharesPO;
@@ -16,6 +17,7 @@ import com.pandaer.pan.server.modules.share.service.IShareService;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlVO;
 import com.pandaer.pan.server.modules.share.vo.ShareDetailVO;
+import com.pandaer.pan.server.modules.share.vo.ShareSimpleInfoVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.log4j.Log4j2;
@@ -24,11 +26,13 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @RestController
 @Log4j2
 @Api("分享模块")
+@Validated
 public class ShareController {
 
     @Autowired
@@ -97,6 +101,35 @@ public class ShareController {
         ShareDetailContext context = new ShareDetailContext();
         context.setShareId(ShareIdUtil.getShareId());
         ShareDetailVO vo = shareService.detail(context);
+        return Resp.successAndData(vo);
+    }
+
+
+    @ApiOperation(value = "获取分享的简略信息",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("share/simple")
+    @LoginIgnore
+    public Resp<ShareSimpleInfoVO> simpleInfo(@RequestParam("shareId") @NotBlank(message = "分享id不能为空") String shareId) {
+        ShareSimpleInfoContext context = new ShareSimpleInfoContext();
+        context.setShareId(IdUtil.decrypt(shareId));
+        ShareSimpleInfoVO vo = shareService.simpleInfo(context);
+        return Resp.successAndData(vo);
+    }
+
+    @ApiOperation(value = "根据文件夹ID获取文件夹下的文件列表",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("share/file/list")
+    @LoginIgnore
+    @NeedShareCode
+    public Resp<List<UserFileVO>> listFile(@RequestParam("parentId") @NotBlank(message = "文件的父文件夹ID") String parentId) {
+        QueryChildFileListContext context = new QueryChildFileListContext();
+        context.setParentId(IdUtil.decrypt(parentId));
+        context.setShareId(ShareIdUtil.getShareId());
+        List<UserFileVO> vo = shareService.listChildFile(context);
         return Resp.successAndData(vo);
     }
 }

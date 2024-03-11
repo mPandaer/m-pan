@@ -12,8 +12,10 @@ import com.pandaer.pan.core.utils.UUIDUtil;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
+import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.constants.ShareConstants;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.converter.ShareConverter;
@@ -24,10 +26,7 @@ import com.pandaer.pan.server.modules.share.enums.ShareStatusEnum;
 import com.pandaer.pan.server.modules.share.service.IShareFileService;
 import com.pandaer.pan.server.modules.share.service.IShareService;
 import com.pandaer.pan.server.modules.share.mapper.MPanShareMapper;
-import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
-import com.pandaer.pan.server.modules.share.vo.MPanShareUrlVO;
-import com.pandaer.pan.server.modules.share.vo.ShareDetailVO;
-import com.pandaer.pan.server.modules.share.vo.ShareUserInfoVO;
+import com.pandaer.pan.server.modules.share.vo.*;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -66,6 +65,9 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     @Autowired
     private ShareConverter shareConverter;
+
+    @Autowired
+    private FileConverter fileConverter;
 
 
     /**
@@ -158,6 +160,99 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     }
 
     /**
+     *查询分享的简单详情
+     * 1.检查分享的合法性 分享的状态 分享的有效期
+     * 2. 查询分享用户的信息
+     * 3. 查询分享的文件列表
+     * @param context
+     * @return
+     */
+    @Override
+    public ShareSimpleInfoVO simpleInfo(ShareSimpleInfoContext context) {
+        MPanShare share = checkShareStatus(context.getShareId());
+        context.setRecords(share);
+        initShareSimpleVO(context);
+        assembleMainShareSimpleInfo(context);
+        assembleShareUserSimpleInfo(context);
+        return context.getVo();
+    }
+
+    /**
+     * 获取分享文件夹下一级文件列表
+     * 1.校验parentId 以及 ShareId的合法性
+     * 2.根据parentId 获取文件列表信息
+     * 3.拼装VO对象列表返回
+     * @param context
+     * @return
+     */
+    @Override
+    public List<UserFileVO> listChildFile(QueryChildFileListContext context) {
+        checkParentIdAndShareId(context);
+        return getChildFileList(context);
+    }
+
+    private List<UserFileVO> getChildFileList(QueryChildFileListContext context) {
+        Long parentId = context.getParentId();
+        LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanUserFile::getParentId,parentId);
+        List<MPanUserFile> entityList = userFileService.list(query);
+        return entityList.stream().map(fileConverter::entity2VOInQueryFileList).collect(Collectors.toList());
+    }
+
+    /**
+     * 校验parentId 以及 ShareId的合法性
+     * @param context
+     */
+    private void checkParentIdAndShareId(QueryChildFileListContext context) {
+        Long parentId = context.getParentId();
+        Long shareId = context.getShareId();
+        if (shareId == null || parentId == null) {
+            throw new MPanBusinessException("parentId和shareId不能为空");
+        }
+        LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanShareFile::getShareId,shareId)
+                .eq(MPanShareFile::getFileId,parentId);
+        int res = shareFileService.count(query);
+        if (res == 0) {
+            throw new MPanBusinessException("文件夹不存在");
+        }
+    }
+
+
+    /**
+     * 组装SimpleInfo的用户信息
+     * @param context
+     */
+    private void assembleShareUserSimpleInfo(ShareSimpleInfoContext context) {
+        Long userId = context.getRecords().getCreateUser();
+        MPanUser userEntity = userService.getById(userId);
+        ShareUserInfoVO shareUserInfoVO = new ShareUserInfoVO();
+        shareUserInfoVO.setUsername(encryptUsername(userEntity.getUsername()));
+        shareUserInfoVO.setUserId(userEntity.getUserId());
+        context.getVo().setShareUserInfoVO(shareUserInfoVO);
+    }
+
+    /**
+     * 组装simpleInfoVO的主要信息
+     * @param context
+     */
+    private void assembleMainShareSimpleInfo(ShareSimpleInfoContext context) {
+        ShareSimpleInfoVO vo = context.getVo();
+        MPanShare records = context.getRecords();
+        vo.setShareId(records.getShareId());
+        vo.setShareName(records.getShareName());
+    }
+
+    /**
+     * 初始化一个简略信息实体
+     * @param context
+     */
+    private void initShareSimpleVO(ShareSimpleInfoContext context) {
+        ShareSimpleInfoVO shareSimpleInfoVO = new ShareSimpleInfoVO();
+        context.setVo(shareSimpleInfoVO);
+    }
+
+    /**
      * 根据用户ID 返回用户信息
      * @param context
      */
@@ -211,12 +306,6 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         ShareDetailVO shareDetailVO = new ShareDetailVO();
         context.setVo(shareDetailVO);
     }
-
-
-
-
-
-
 
 
     /*----------------------------------------------------------private----------------------------------------------------------*/

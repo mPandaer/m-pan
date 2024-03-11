@@ -1,11 +1,13 @@
 package com.pandaer.pan.server.modules.share.service;
 
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.domain.MPanShare;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlVO;
 import com.pandaer.pan.server.modules.share.vo.ShareDetailVO;
+import com.pandaer.pan.server.modules.share.vo.ShareSimpleInfoVO;
 
 import java.util.List;
 
@@ -53,4 +55,14 @@ public interface IShareService extends IService<MPanShare> {
      * @return
      */
     ShareDetailVO detail(ShareDetailContext context);
+
+    ShareSimpleInfoVO simpleInfo(ShareSimpleInfoContext context);
+
+
+    /**
+     * 获取下一级的文件列表
+     * @param context
+     * @return
+     */
+    List<UserFileVO> listChildFile(QueryChildFileListContext context);
 }

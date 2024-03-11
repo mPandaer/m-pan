@@ -1,10 +1,12 @@
 package com.pandaer.pan.server.modules.share;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.google.common.collect.Lists;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
+import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.constants.ShareConstants;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.enums.ShareDayTypeEnum;
@@ -13,9 +15,11 @@ import com.pandaer.pan.server.modules.share.service.IShareService;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlVO;
 import com.pandaer.pan.server.modules.share.vo.ShareDetailVO;
+import com.pandaer.pan.server.modules.share.vo.ShareSimpleInfoVO;
 import com.pandaer.pan.server.modules.user.context.UserRegisterContext;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -304,6 +308,79 @@ public class ShareTest {
         ShareDetailVO detail = shareService.detail(shareDetailContext);
         System.out.println(detail);
         Assert.assertNotNull(detail);
+    }
+
+    /**
+     * 测试获取分享的简略信息
+     */
+    @Test
+    public void testGetShareSimpleInfoSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+        //创建文件夹
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long fileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId != null && fileId > 0);
+
+        //分享文件夹
+        CreateShareUrlContext context = new CreateShareUrlContext();
+        context.setShareName("测试分享");
+        context.setUserId(userId);
+        context.setShareType(ShareTypeEnum.NEED_SHARE_CODE.getCode());
+        context.setShareDayType(ShareDayTypeEnum.SEVEN_DAYS_VALIDITY.getCode());
+        context.setShareFileIdList(Lists.newArrayList(fileId));
+        MPanShareUrlVO shareUrl = shareService.createShareUrl(context);
+        Assert.assertTrue(shareUrl != null && shareUrl.getShareId() != null && shareUrl.getShareId() > 0);
+
+        //获取分享简略信息
+        ShareSimpleInfoContext shareSimpleInfoContext = new ShareSimpleInfoContext();
+        shareSimpleInfoContext.setShareId(shareUrl.getShareId());
+        ShareSimpleInfoVO shareSimpleInfoVO = shareService.simpleInfo(shareSimpleInfoContext);
+        Assert.assertTrue(shareSimpleInfoVO != null && StringUtils.isNotBlank(shareSimpleInfoVO.getShareName()));
+    }
+
+    /**
+     * 测试获取分享文件夹下一级文件以及子文件夹信息
+     */
+    @Test
+    public void testGetChildFileListSuccess() {
+        Long userId = userRegister();
+        CurrentUserVO currentUser = current(userId);
+        //创建文件夹 1
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹1");
+        createFolderContext.setParentId(currentUser.getRootFileId());
+        Long fileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(fileId != null && fileId > 0);
+
+        //创建文件夹1-1
+        createFolderContext = new CreateFolderContext();
+        createFolderContext.setUserId(userId);
+        createFolderContext.setFolderName("新建文件夹1-1");
+        createFolderContext.setParentId(fileId);
+        Long childFileId = userFileService.creatFolder(createFolderContext);
+        Assert.assertTrue(childFileId != null && childFileId > 0);
+
+        //分享文件夹
+        CreateShareUrlContext context = new CreateShareUrlContext();
+        context.setShareName("测试分享");
+        context.setUserId(userId);
+        context.setShareType(ShareTypeEnum.NEED_SHARE_CODE.getCode());
+        context.setShareDayType(ShareDayTypeEnum.SEVEN_DAYS_VALIDITY.getCode());
+        context.setShareFileIdList(Lists.newArrayList(fileId,childFileId));
+        MPanShareUrlVO shareUrl = shareService.createShareUrl(context);
+        Assert.assertTrue(shareUrl != null && shareUrl.getShareId() != null && shareUrl.getShareId() > 0);
+
+        //获取分享文件夹下一级信息
+        QueryChildFileListContext queryChildFileListContext = new QueryChildFileListContext();
+        queryChildFileListContext.setParentId(fileId);
+        queryChildFileListContext.setShareId(shareUrl.getShareId());
+        List<UserFileVO> voList = shareService.listChildFile(queryChildFileListContext);
+        Assert.assertTrue(CollectionUtil.isNotEmpty(voList) && voList.size() == 1 && voList.get(0).getFilename().equals("新建文件夹1-1"));
     }
 
 
