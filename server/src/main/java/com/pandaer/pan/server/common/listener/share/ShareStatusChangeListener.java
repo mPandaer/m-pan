@@ -8,6 +8,7 @@ import com.pandaer.pan.server.modules.share.service.IShareService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,6 +34,7 @@ public class ShareStatusChangeListener {
      * @param event
      */
     @EventListener(DeleteFileWithRecycleEvent.class)
+    @Async("eventListenerTaskExecutor")
     public void handleDeleteFileWithRecycleEvent(DeleteFileWithRecycleEvent event) {
         //这次删除的文件列表
         List<Long> deleteFileIdList = event.getDeleteFileIdList();
@@ -48,6 +50,7 @@ public class ShareStatusChangeListener {
      * @param event
      */
     @EventListener(RestoreFileEvent.class)
+    @Async("eventListenerTaskExecutor")
     public void handleRestoreFileEvent(RestoreFileEvent event) {
         //这次还原的文件列表
         List<Long> restoreFileIdList = event.getRestoreFileIdList();

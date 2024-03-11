@@ -9,6 +9,7 @@ import com.pandaer.pan.server.modules.log.service.IErrorLogService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -21,6 +22,7 @@ public class ErrorLogListener {
     private IErrorLogService errorLogService;
 
     @EventListener(ErrorLogEvent.class)
+    @Async("eventListenerTaskExecutor")
     public void listenErrorLogEvent(ErrorLogEvent errorLogEvent) {
         MPanErrorLog logRecord = new MPanErrorLog();
         logRecord.setId(IdUtil.get());

@@ -23,6 +23,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -54,6 +55,7 @@ public class FileEventListener implements ApplicationContextAware {
      * @param event
      */
     @EventListener(SearchFileEvent.class)
+    @Async("eventListenerTaskExecutor")
     public void listenSearchFileEvent(SearchFileEvent event) {
         log.info("searchFileEvent:{}", event);
         MPanUserSearchHistory history = new MPanUserSearchHistory();
@@ -81,6 +83,7 @@ public class FileEventListener implements ApplicationContextAware {
      * 3. 删除物理文件记录
      */
     @EventListener(ActualDeleteFileEvent.class)
+    @Async("eventListenerTaskExecutor")
     public void listenActualDeleteFileEvent(ActualDeleteFileEvent event) {
         List<MPanUserFile> allRecords = event.getAllRecords();
         if (allRecords.isEmpty()) {
