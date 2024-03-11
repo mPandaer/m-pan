@@ -12,6 +12,7 @@ import com.pandaer.pan.core.utils.UUIDUtil;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CopyFileContext;
+import com.pandaer.pan.server.modules.file.context.FileDownloadContext;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
@@ -202,6 +203,42 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         checkShareAndFileList(context);
         checkTargetParent(context);
         doSaveFileList(context);
+    }
+
+    /**
+     * 分享的文件下载
+     * 1. 校验分享状态以及文件ID的合法性
+     * 2. 委托userFileService download
+     * @param context
+     */
+    @Override
+    public void shareDownload(ShareDownloadContext context) {
+        checkShareStatus(context.getShareId());
+        checkFileIdInShare(context.getShareId(),Lists.newArrayList(context.getFileId()));
+        doShareDownload(context);
+
+    }
+
+    /**
+     * 执行文件下载
+     * @param context
+     */
+    private void doShareDownload(ShareDownloadContext context) {
+        FileDownloadContext fileDownloadContext = new FileDownloadContext();
+        fileDownloadContext.setUserId(context.getUserId());
+        fileDownloadContext.setFileId(context.getFileId());
+        fileDownloadContext.setResponse(context.getResponse());
+        userFileService.shareDownload(fileDownloadContext);
+    }
+
+    private void checkFileIdInShare(Long shareId, ArrayList<Long> fileIdList) {
+        LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
+        query.eq(MPanShareFile::getShareId,shareId);
+        List<Long> shareFileList =
+                shareFileService.list(query).stream().map(MPanShareFile::getFileId).collect(Collectors.toList());
+        if (!new HashSet<>(shareFileList).containsAll(fileIdList)) {
+            throw new MPanBusinessException("要下载的文件存在不合法");
+        }
     }
 
     /**

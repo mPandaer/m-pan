@@ -151,7 +151,7 @@ public class FileController {
     @GetMapping("/file/download")
     public void mergeChunkFile(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId") String fileId, HttpServletResponse response) {
         FileDownloadContext fileDownloadContext = new FileDownloadContext();
-        fileDownloadContext.setFileId(fileId);
+        fileDownloadContext.setFileId(IdUtil.decrypt(fileId));
         fileDownloadContext.setResponse(response);
         fileDownloadContext.setUserId(UserIdUtil.getUserId());
         userFileService.download(fileDownloadContext);

@@ -72,4 +72,10 @@ public interface IShareService extends IService<MPanShare> {
      * @param context
      */
     void saveFileList(SaveShareFileContext context);
+
+    /**
+     * 分享文件下载
+     * @param context
+     */
+    void shareDownload(ShareDownloadContext context);
 }

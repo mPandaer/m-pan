@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletResponse;
 @Data
 public class FileDownloadContext {
 
-    private String fileId;
+    private Long fileId;
 
     private HttpServletResponse response;
 

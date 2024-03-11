@@ -5,9 +5,11 @@ import com.pandaer.pan.server.modules.file.vo.UserFileVO;
 import com.pandaer.pan.server.modules.share.context.BatchSaveShareFileContext;
 import com.pandaer.pan.server.modules.share.context.CancelSharesContext;
 import com.pandaer.pan.server.modules.share.context.CreateShareUrlContext;
+import com.pandaer.pan.server.modules.share.context.SaveShareFileContext;
 import com.pandaer.pan.server.modules.share.domain.MPanShare;
 import com.pandaer.pan.server.modules.share.po.CancelSharesPO;
 import com.pandaer.pan.server.modules.share.po.CreateShareUrlPO;
+import com.pandaer.pan.server.modules.share.po.SaveShareFilePO;
 import com.pandaer.pan.server.modules.share.vo.MPanShareUrlListVO;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-08T15:18:11+0800",
+    date = "2024-03-11T18:22:40+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
 )
 @Component
@@ -111,5 +113,21 @@ public class ShareConverterImpl implements ShareConverter {
         userFileVO.setUpdateTime( mPanUserFile.getUpdateTime() );
 
         return userFileVO;
+    }
+
+    @Override
+    public SaveShareFileContext PO2ContextInSaveFileList(SaveShareFilePO saveShareFilePO) {
+        if ( saveShareFilePO == null ) {
+            return null;
+        }
+
+        SaveShareFileContext saveShareFileContext = new SaveShareFileContext();
+
+        saveShareFileContext.setShareId( com.pandaer.pan.server.common.utils.ShareIdUtil.getShareId() );
+        saveShareFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
+        saveShareFileContext.setFileIdList( saveShareFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()) );
+        saveShareFileContext.setTargetParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(saveShareFilePO.getTargetParentId()) );
+
+        return saveShareFileContext;
     }
 }

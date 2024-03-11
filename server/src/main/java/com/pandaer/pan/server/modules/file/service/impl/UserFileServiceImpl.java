@@ -228,6 +228,18 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         doDownloadFile(record,fileDownloadContext.getResponse());
     }
 
+    @Override
+    public void shareDownload(FileDownloadContext fileDownloadContext) {
+        MPanUserFile record = getById(fileDownloadContext.getFileId());
+        if (Objects.isNull(record)) {
+            throw new MPanBusinessException("文件不存在");
+        }
+        if (isFolder(record)) {
+            throw new MPanBusinessException("文件夹暂不支持下载");
+        }
+        doDownloadFile(record,fileDownloadContext.getResponse());
+    }
+
     /**
      * 文件预览
      * 1. 参数校验，判断文件是否存在

@@ -38,7 +38,7 @@ public interface ShareConverter {
     UserFileVO entity2VOInGetDetailInfo(MPanUserFile mPanUserFile);
 
 
-    @Mapping(target = "shareId",expression = "java(context.getShareRecord().getShareId())")
+    @Mapping(target = "shareId",expression = "java(com.pandaer.pan.server.common.utils.ShareIdUtil.getShareId())")
     @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
     @Mapping(target = "fileIdList",expression = "java(saveShareFilePO.getFileIdList().stream().map(com.pandaer.pan.core.utils.IdUtil::decrypt).collect(java.util.stream.Collectors.toList()))")
     @Mapping(target = "targetParentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(saveShareFilePO.getTargetParentId()))")
