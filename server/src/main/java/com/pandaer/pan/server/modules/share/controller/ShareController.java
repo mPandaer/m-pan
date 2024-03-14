@@ -31,21 +31,28 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 
+
 @RestController
+@Api(tags = "文件分享模块")
 @Log4j2
-@Api("分享模块")
 @Validated
 public class ShareController {
 
-    @Autowired
-    private IShareService shareService;
+    private final IShareService shareService;
+
+    private final ShareConverter shareConverter;
 
     @Autowired
-    private ShareConverter shareConverter;
+    public ShareController(IShareService shareService, ShareConverter shareConverter) {
+        this.shareService = shareService;
+        this.shareConverter = shareConverter;
+    }
 
-    @ApiOperation(value = "创建分享链接",
-            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+
+
+    @ApiOperation(value = "创建分享并生成分享链接",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @PostMapping("share")
     public Resp<MPanShareUrlVO> createShareUrl(@Validated @RequestBody CreateShareUrlPO createShareUrlPO) {
@@ -56,7 +63,7 @@ public class ShareController {
 
     @ApiOperation(value = "获取已经分享的信息列表",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @GetMapping("shares")
     public Resp<List<MPanShareUrlListVO>> listShares() {
@@ -68,7 +75,7 @@ public class ShareController {
 
     @ApiOperation(value = "批量取消分享",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @DeleteMapping("shares")
     public Resp<Object> cancelShares(@Validated @RequestBody CancelSharesPO cancelSharesPO) {
@@ -80,7 +87,7 @@ public class ShareController {
 
     @ApiOperation(value = "分享码的校验",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @DeleteMapping("share/code/check")
     @LoginIgnore
@@ -94,7 +101,7 @@ public class ShareController {
 
     @ApiOperation(value = "获取分享的详情信息",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @GetMapping("share")
     @NeedShareCode
@@ -109,7 +116,7 @@ public class ShareController {
 
     @ApiOperation(value = "获取分享的简略信息",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @GetMapping("share/simple")
     @LoginIgnore
@@ -122,7 +129,7 @@ public class ShareController {
 
     @ApiOperation(value = "根据文件夹ID获取文件夹下的文件列表",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @GetMapping("share/file/list")
     @LoginIgnore
@@ -137,7 +144,7 @@ public class ShareController {
 
     @ApiOperation(value = "将分享文件保存到我的网盘",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @PostMapping("share/file/save")
     @NeedShareCode
@@ -149,7 +156,7 @@ public class ShareController {
 
     @ApiOperation(value = "分享文件下载",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @GetMapping("share/file/save")
     @NeedShareCode

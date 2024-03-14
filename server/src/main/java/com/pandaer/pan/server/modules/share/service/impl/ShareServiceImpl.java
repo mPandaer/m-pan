@@ -49,99 +49,80 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
-* @author pandaer
-* @description 针对表【m_pan_share(用户分享表)】的数据库操作Service实现
-* @createDate 2024-02-25 18:38:16
-*/
+ * 管理分享的相关业务
+ */
 @Service
 public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     implements IShareService, ApplicationContextAware {
 
+    private final IUserFileService userFileService;
+
+    private final IShareFileService shareFileService;
+
+    private final IUserService userService;
+
+    private final PanServerConfigProperties properties;
+
+    private final ShareConverter shareConverter;
+
+    private final FileConverter fileConverter;
+
+    private final ShareSimpleInfoBloomFilterInterceptor bloomFilterInterceptor;
+
+    private final ManualCacheService<MPanShare> shareManualCacheService;
 
     @Autowired
-    private IUserFileService userFileService;
+    public ShareServiceImpl(IUserFileService userFileService,
+                            IShareFileService shareFileService,
+                            IUserService userService, PanServerConfigProperties properties,
+                            ShareConverter shareConverter, FileConverter fileConverter,
+                            ShareSimpleInfoBloomFilterInterceptor bloomFilterInterceptor,
+                            @Qualifier("shareCacheService") ManualCacheService<MPanShare> shareManualCacheService) {
+        this.userFileService = userFileService;
+        this.shareFileService = shareFileService;
+        this.userService = userService;
+        this.properties = properties;
+        this.shareConverter = shareConverter;
+        this.fileConverter = fileConverter;
+        this.bloomFilterInterceptor = bloomFilterInterceptor;
+        this.shareManualCacheService = shareManualCacheService;
+    }
 
-    @Autowired
-    private IShareFileService shareFileService;
-
-    @Autowired
-    private IUserService userService;
-
-    @Autowired
-    private PanServerConfigProperties properties;
-
-    @Autowired
-    private ShareConverter shareConverter;
-
-    @Autowired
-    private FileConverter fileConverter;
-
-    @Autowired
-    private ShareSimpleInfoBloomFilterInterceptor bloomFilterInterceptor;
-
-    @Autowired
-    @Qualifier("shareCacheService")
-    private ManualCacheService<MPanShare> shareManualCacheService;
 
     private ApplicationContext applicationContext;
 
 
-    @Override
-    public boolean removeById(Serializable id) {
-        return shareManualCacheService.removeById(id);
-    }
-
-    @Override
-    public boolean removeByIds(Collection<? extends Serializable> idList) {
-        return shareManualCacheService.removeByIds(idList);
-    }
-
-    @Override
-    public boolean updateById(MPanShare entity) {
-        return shareManualCacheService.updateById(entity.getShareId(),entity);
-    }
-
-    @Override
-    public boolean updateBatchById(Collection<MPanShare> entityList) {
-        Map<Long, MPanShare> list = entityList.stream().collect(Collectors.toMap(MPanShare::getShareId, entity -> entity));
-        return shareManualCacheService.updateByIds(list);
-    }
-
-    @Override
-    public MPanShare getById(Serializable id) {
-        return shareManualCacheService.getById(id);
-    }
-
-    @Override
-    public List<MPanShare> listByIds(Collection<? extends Serializable> idList) {
-        return shareManualCacheService.getByIds(idList);
-    }
 
     /**
-     * 创建分享链接
+     * 创建分享并生成链接
      * 1. 校验文件是否存在
      * 2. 拼装分享记录保存数据哭
      * 3. 保存分享记录与文件记录之间的关联关系
      * 4. 拼装返回实体VO
-     * @param context
-     * @return
+     * @param context 创建分享并生成访问链接的上下文对象
+     * @return 包含详细关于文件分享的信息
      */
     @Override
     @Transactional(rollbackFor = MPanBusinessException.class)
     public MPanShareUrlVO createShareUrl(CreateShareUrlContext context) {
+        //检查文件列表的合法性
         checkFileIdList(context);
+        //保存分享记录
         saveShareRecord(context);
+        //建立当前分享与文件之间的关系
         saveShareFileRecord(context);
+        //返回定义的响应实体
         MPanShareUrlVO vo = assembleShareUrlVO(context);
+        //增量添加数据到布隆过滤器中 todo(布隆过滤器的增量增加有待优化)
         bloomFilterInterceptor.getFilter().put(vo.getShareId());
         return vo;
     }
 
 
     /**
-     * 获取当前用户的分享链接列表
-     * @param context
-     * @return
+     * 获取当前登录用户的分享链接列表
+     * @param context 上下文对象
+     * @return 分享链接相关信息
      */
     @Override
     public List<MPanShareUrlListVO> listShare(ListShareContext context) {
@@ -161,7 +142,7 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1. 检查shareId的合法性
      * 2. 删除分享记录
      * 3. 删除分享记录与文件记录之间的关联关系
-     * @param context
+     * @param context 上下文对象
      */
     @Override
     @Transactional(rollbackFor = MPanBusinessException.class)
@@ -178,8 +159,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1. 校验shareId的合法性
      * 2. 比对shareCode的正确性
      * 3. 返回token
-     * @param context
-     * @return
+     * @param context 上下文对象
+     * @return 校验成功后的Token
      */
     @Override
     public String checkShareCode(CheckShareCodeContext context) {
@@ -194,8 +175,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1.检查分享的合法性 分享的状态 分享的有效期
      * 2. 查询分享用户的信息
      * 3. 查询分享的文件列表
-     * @param context
-     * @return
+     * @param context 上下文对象
+     * @return 分享的详细信息
      */
     @Override
     public ShareDetailVO detail(ShareDetailContext context) {
@@ -213,8 +194,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1.检查分享的合法性 分享的状态 分享的有效期
      * 2. 查询分享用户的信息
      * 3. 查询分享的文件列表
-     * @param context
-     * @return
+     * @param context 上下文对象
+     * @return 分享简略信息
      */
     @Override
     public ShareSimpleInfoVO simpleInfo(ShareSimpleInfoContext context) {
@@ -231,8 +212,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1.校验parentId 以及 ShareId的合法性
      * 2.根据parentId 获取文件列表信息
      * 3.拼装VO对象列表返回
-     * @param context
-     * @return
+     * @param context 上下文对象
+     * @return 直接子文件以及子文件夹
      */
     @Override
     public List<UserFileVO> listChildFile(QueryChildFileListContext context) {
@@ -246,7 +227,7 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 1.校验文件ID,分享ID,以及文件与分享ID之间的对应关系，以及目标文件夹是否存在
      * 2.根据文件ID获取到全部的文件ID
      * 3.保存文件与用户之间的关系记录
-     * @param context
+     * @param context 上下文对象
      */
     @Override
     public void saveFileList(SaveShareFileContext context) {
@@ -259,14 +240,13 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 分享的文件下载
      * 1. 校验分享状态以及文件ID的合法性
      * 2. 委托userFileService download
-     * @param context
+     * @param context 上下文对象
      */
     @Override
     public void shareDownload(ShareDownloadContext context) {
         checkShareStatus(context.getShareId());
         checkFileIdInShare(context.getShareId(),Lists.newArrayList(context.getFileId()));
         doShareDownload(context);
-
     }
 
     /**
@@ -274,7 +254,7 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
      * 具体的逻辑
      * 1. 根据文件ID获取到可能影响的shareId
      * 2. 具体判断文件是否真正的影响到了分享状态
-     * @param allFileList
+     * @param allFileList 上下文对象
      */
     @Override
     public void refreshShareStatus(List<MPanUserFile> allFileList) {
@@ -293,9 +273,9 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     /**
      * 滚动查询分享的ID
-     * @param startId
-     * @param limit
-     * @return
+     * @param startId 起始ID
+     * @param limit 窗口大小
+     * @return 查询到的分享ID
      */
     @Override
     public List<Long> rollingGetShareId(Long startId, Long limit) {
@@ -309,7 +289,7 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     /**
      * 根据分享Id改变分享的状态
-     * @param id
+     * @param id 分享ID
      */
     private void doChangeShareStatus(Long id,Integer shareStatus) {
         MPanShare share = getById(id);
@@ -322,8 +302,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     /**
      * 根据分享Id判断当前的分享是否会受到了当前事件的影响
-     * @param id
-     * @return
+     * @param id 分享ID
+     * @return 分享的文件夹中是否有删除的文件
      */
     private boolean isFileDeletedInShare(Long id) {
         List<Long> fileIdList = shareFileService.getFileIdListInCurShare(id);
@@ -333,8 +313,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
 
     /**
      * 检查这些文件是否被删除
-     * @param fileIdList
-     * @return
+     * @param fileIdList 文件ID列表
+     * @return 使用由于某个事件，分享的文件被删除
      */
     private boolean checkFileDeletedWithEvent(List<Long> fileIdList) {
         List<MPanUserFile> userFileList = userFileService.listByIds(fileIdList);
@@ -526,20 +506,58 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     }
 
 
-    /*----------------------------------------------------------private----------------------------------------------------------*/
+    @Override
+    public boolean removeById(Serializable id) {
+        return shareManualCacheService.removeById(id);
+    }
+
+    @Override
+    public boolean removeByIds(Collection<? extends Serializable> idList) {
+        return shareManualCacheService.removeByIds(idList);
+    }
+
+    @Override
+    public boolean updateById(MPanShare entity) {
+        return shareManualCacheService.updateById(entity.getShareId(),entity);
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<MPanShare> entityList) {
+        Map<Long, MPanShare> list = entityList.stream().collect(Collectors.toMap(MPanShare::getShareId, entity -> entity));
+        return shareManualCacheService.updateByIds(list);
+    }
+
+    @Override
+    public MPanShare getById(Serializable id) {
+        return shareManualCacheService.getById(id);
+    }
+
+    @Override
+    public List<MPanShare> listByIds(Collection<? extends Serializable> idList) {
+        return shareManualCacheService.getByIds(idList);
+    }
+
+
+    /*===========================================================================PRIVATE===========================================================================*/
     /**
      * 检查文件列表的合法性
      * @param context 上下文
      */
     private void checkFileIdList(CreateShareUrlContext context) {
+        //获取用户提供的文件ID
         List<Long> shareFileIdList = context.getShareFileIdList();
+
+        //根据用户提供的文件ID查询用户文件信息
         LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
         query.eq(MPanUserFile::getUserId,context.getUserId())
                 .in(MPanUserFile::getFileId,shareFileIdList);
         List<MPanUserFile> userFileList = userFileService.list(query);
+
+        //判断用户的与实际的大小是否一致
         if (userFileList.size() != shareFileIdList.size()) {
             throw new MPanBusinessException("文件列表不合法");
         }
+        //判断文件列表的用户是否属于当前登录用户
         Set<Long> userIdSet = userFileList.stream().map(MPanUserFile::getUserId).collect(Collectors.toSet());
         if (userIdSet.size() > 1 || !userIdSet.contains(context.getUserId())) {
             throw new MPanBusinessException("文件列表不合法");
