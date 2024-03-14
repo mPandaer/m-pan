@@ -1,6 +1,7 @@
 package com.pandaer.pan.server.modules.user.controller;
 
 import com.pandaer.pan.core.response.Resp;
+import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.server.common.annotation.LoginIgnore;
 import com.pandaer.pan.server.common.utils.UserIdUtil;
 import com.pandaer.pan.server.modules.user.context.*;
@@ -32,10 +33,10 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @PostMapping("register")
     @LoginIgnore
-    public Resp<Long> register(@Validated @RequestBody UserRegisterPO userRegisterPO) {
+    public Resp<String> register(@Validated @RequestBody UserRegisterPO userRegisterPO) {
         UserRegisterContext context = userConverter.PO2ContextInRegister(userRegisterPO);
         Long userId = userService.register(context);
-        return Resp.successAndData(userId);
+        return Resp.successAndData(IdUtil.encrypt(userId));
     }
 
 

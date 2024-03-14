@@ -1,4 +1,0 @@
-META-INF/spring-configuration-metadata.json
-com/pandaer/pan/storage/engine/local/config/LocalStorageEngineConfigProperties.class
-com/pandaer/pan/storage/engine/local/initializer/FileResourceInitializer.class
-com/pandaer/pan/storage/engine/local/LocalStorageEngine.class

@@ -223,7 +223,7 @@ public class FileTest {
     }
 
     //文件秒传失败
-    @Test(expected = MPanBusinessException.class)
+    @Test
     public void testSecFileUploadFail() {
         Long userId = userRegister();
         CurrentUserVO currentUser = current(userId);
@@ -234,7 +234,8 @@ public class FileTest {
         context.setFilename("filename_x");
         context.setUserId(userId);
         context.setParentId(currentUser.getRootFileId());
-        userFileService.secFileUpload(context);
+        boolean res = userFileService.secFileUpload(context);
+        Assert.assertFalse(res);
     }
 
     //单文件上传测试成功

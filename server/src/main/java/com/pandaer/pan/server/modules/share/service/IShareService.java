@@ -85,4 +85,6 @@ public interface IShareService extends IService<MPanShare> {
      * @param allDeleteFileList
      */
     void refreshShareStatus(List<MPanUserFile> allDeleteFileList);
+
+    List<Long> rollingGetShareId(Long startId, Long limit);
 }

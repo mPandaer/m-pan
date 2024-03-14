@@ -11,17 +11,14 @@
       "name": "pan.server.chunk-file-expiration-days",
       "type": "java.lang.Integer",
       "description": "分片文件过期时间",
+      "sourceType": "com.pandaer.pan.server.common.config.PanServerConfigProperties",
       "defaultValue": 1
-    },
-    {
-      "name": "pan.server.server-port",
-      "type": "java.lang.Integer",
-      "sourceType": "com.pandaer.pan.server.common.config.PanServerConfigProperties"
     },
     {
       "name": "pan.server.share-prefix",
       "type": "java.lang.String",
       "description": "分享链接前缀",
+      "sourceType": "com.pandaer.pan.server.common.config.PanServerConfigProperties",
       "defaultValue": "http:\/\/localhost:serverPort\/share\/"
     }
   ],

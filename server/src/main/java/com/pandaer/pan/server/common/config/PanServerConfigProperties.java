@@ -11,10 +11,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "pan.server")
 public class PanServerConfigProperties {
 
-    @Value("${server.port}")
-    private Integer serverPort;
+    private  Integer chunkFileExpirationDays = MPanConstants.ONE_INT;
 
-    private final Integer chunkFileExpirationDays = MPanConstants.ONE_INT;
-
-    private final String sharePrefix = "http://localhost:"+serverPort+"/share/";
+    private  String sharePrefix = "http://localhost:8080/share/";
 }

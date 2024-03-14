@@ -3,6 +3,7 @@ package com.pandaer.pan.server.modules.share;
 import cn.hutool.core.collection.CollectionUtil;
 import com.google.common.collect.Lists;
 import com.pandaer.pan.core.exception.MPanBusinessException;
+import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
@@ -27,12 +28,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.yaml.snakeyaml.events.Event;
 
 import java.util.List;
 
 @SpringBootTest
 @RunWith(SpringJUnit4ClassRunner.class)
-@Transactional
+//@Transactional
 public class ShareTest {
 
     @Autowired
@@ -383,6 +385,27 @@ public class ShareTest {
         Assert.assertTrue(CollectionUtil.isNotEmpty(voList) && voList.size() == 1 && voList.get(0).getFilename().equals("新建文件夹1-1"));
     }
 
+
+
+    @Test
+    public void init() {
+        CreateShareUrlContext context = new CreateShareUrlContext();
+        context.setUserId(1767860440897773568L);
+        context.setShareType(ShareTypeEnum.NEED_SHARE_CODE.getCode());
+        context.setShareDayType(ShareDayTypeEnum.PERMANENT_VALIDITY.getCode());
+        context.setShareFileIdList(Lists.newArrayList(1767862283040284672L));
+
+        for (int i = 0; i < 100000; i++) {
+            context.setShareName("test" + i);
+            shareService.createShareUrl(context);
+        }
+    }
+
+    @Test
+    public void demo() {
+        System.out.println(IdUtil.encrypt(1768107668795121664L));
+        System.out.println(IdUtil.encrypt(101010101010L));
+    }
 
     /*-------------------------------------------------------------------------private-------------------------------------------------------------------------*/
     private static final String USERNAME = "bobo";

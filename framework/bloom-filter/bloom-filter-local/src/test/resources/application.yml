@@ -1,0 +1,9 @@
+pan:
+  bloom:
+    filter:
+      local:
+        items:
+          - name: test
+            funnel-type-name: INTEGER
+            expected-insertions: 100000
+            fpp: 0.01

@@ -64,6 +64,13 @@
             <version>1.0</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>com.pandaer.pan</groupId>
+            <artifactId>m-pan-bloom-filter-local</artifactId>
+            <version>1.0</version>
+        </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>com.pandaer.pan</groupId>-->
 <!--            <artifactId>m-pan-storage-engine-fastdfs</artifactId>-->

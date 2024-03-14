@@ -4,11 +4,13 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
+import com.pandaer.pan.bloom.filter.core.BloomFilterManager;
 import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.UUIDUtil;
+import com.pandaer.pan.server.common.cache.ManualCacheService;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
 import com.pandaer.pan.server.common.event.log.ErrorLogEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
@@ -18,6 +20,7 @@ import com.pandaer.pan.server.modules.file.converter.FileConverter;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.UserFileVO;
+import com.pandaer.pan.server.modules.share.bf.ShareSimpleInfoBloomFilterInterceptor;
 import com.pandaer.pan.server.modules.share.constants.ShareConstants;
 import com.pandaer.pan.server.modules.share.context.*;
 import com.pandaer.pan.server.modules.share.converter.ShareConverter;
@@ -34,11 +37,14 @@ import com.pandaer.pan.server.modules.user.service.IUserService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,8 +76,46 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     @Autowired
     private FileConverter fileConverter;
 
+    @Autowired
+    private ShareSimpleInfoBloomFilterInterceptor bloomFilterInterceptor;
+
+    @Autowired
+    @Qualifier("shareCacheService")
+    private ManualCacheService<MPanShare> shareManualCacheService;
+
     private ApplicationContext applicationContext;
 
+
+    @Override
+    public boolean removeById(Serializable id) {
+        return shareManualCacheService.removeById(id);
+    }
+
+    @Override
+    public boolean removeByIds(Collection<? extends Serializable> idList) {
+        return shareManualCacheService.removeByIds(idList);
+    }
+
+    @Override
+    public boolean updateById(MPanShare entity) {
+        return shareManualCacheService.updateById(entity.getShareId(),entity);
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<MPanShare> entityList) {
+        Map<Long, MPanShare> list = entityList.stream().collect(Collectors.toMap(MPanShare::getShareId, entity -> entity));
+        return shareManualCacheService.updateByIds(list);
+    }
+
+    @Override
+    public MPanShare getById(Serializable id) {
+        return shareManualCacheService.getById(id);
+    }
+
+    @Override
+    public List<MPanShare> listByIds(Collection<? extends Serializable> idList) {
+        return shareManualCacheService.getByIds(idList);
+    }
 
     /**
      * 创建分享链接
@@ -88,7 +132,9 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         checkFileIdList(context);
         saveShareRecord(context);
         saveShareFileRecord(context);
-        return assembleShareUrlVO(context);
+        MPanShareUrlVO vo = assembleShareUrlVO(context);
+        bloomFilterInterceptor.getFilter().put(vo.getShareId());
+        return vo;
     }
 
 
@@ -243,6 +289,22 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
                 doChangeShareStatus(id,ShareStatusEnum.NORMAL.getCode());
             }
         });
+    }
+
+    /**
+     * 滚动查询分享的ID
+     * @param startId
+     * @param limit
+     * @return
+     */
+    @Override
+    public List<Long> rollingGetShareId(Long startId, Long limit) {
+        LambdaQueryWrapper<MPanShare> query = new LambdaQueryWrapper<>();
+        query.select(MPanShare::getShareId)
+                .gt(MPanShare::getShareId,startId)
+                .orderByAsc(MPanShare::getShareId)
+                .last("limit " + limit);
+        return listObjs(query,obj -> (Long) obj);
     }
 
     /**
@@ -556,7 +618,7 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         if (!sharePrefix.endsWith(MPanConstants.SLASH_STR)) {
             sharePrefix = sharePrefix + MPanConstants.SLASH_STR;
         }
-        return sharePrefix + shareId;
+        return sharePrefix + URLEncoder.encode(IdUtil.encrypt(shareId));
     }
 
 

@@ -7,6 +7,7 @@ import com.pandaer.pan.core.response.ResponseCode;
 import com.pandaer.pan.core.utils.IdUtil;
 import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.PasswordUtil;
+import com.pandaer.pan.server.common.cache.AnnotationCacheService;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CreateFolderContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
@@ -17,13 +18,16 @@ import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.pandaer.pan.server.modules.user.service.IUserService;
 import com.pandaer.pan.server.modules.user.mapper.MPanUserMapper;
+import com.pandaer.pan.server.modules.user.service.cache.UserCacheService;
 import com.pandaer.pan.server.modules.user.vo.CurrentUserVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
 
@@ -44,6 +48,29 @@ public class UserServiceImpl extends ServiceImpl<MPanUserMapper, MPanUser>
 
     @Autowired
     private Cache panCache;
+
+    @Autowired
+    @Qualifier(value = "userCacheService")
+    private AnnotationCacheService<MPanUser> userCacheService;
+
+    public UserServiceImpl() {
+        super();
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+        return userCacheService.removeById(id);
+    }
+
+    @Override
+    public boolean updateById(MPanUser entity) {
+        return userCacheService.updateById(entity.getUserId(),entity);
+    }
+
+    @Override
+    public MPanUser getById(Serializable id) {
+        return userCacheService.getById(id);
+    }
 
     /**
      * 用户注册具体实现

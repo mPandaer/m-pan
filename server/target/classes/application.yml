@@ -32,6 +32,7 @@ swagger2:
 mybatis-plus:
   mapper-locations: classpath:mappers/**/*.xml
 
+
 #pan:
 #  storage:
 #    engine:
@@ -48,3 +49,15 @@ mybatis-plus:
 #        access-key-id:
 #        access-key-secret:
 #        auto-create-bucket: true
+pan:
+  server:
+    share-prefix: http://127.0.0.1:5173
+  bloom:
+    filter:
+      local:
+        items:
+          - name: SHARE_SIMPLE_BLOOM_FILTER
+            funnel-type-name: LONG
+            expected-insertions: 100000
+            fpp: 0.01
+
