@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-14T13:13:00+0800",
-    comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Oracle Corporation)"
+    date = "2024-03-15T08:55:55+0800",
+    comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Azul Systems, Inc.)"
 )
 @Component
 public class UserConverterImpl implements UserConverter {

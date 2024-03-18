@@ -5,16 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.pandaer.pan</groupId>
-        <artifactId>m-pan-framework</artifactId>
+        <artifactId>m-pan-lock</artifactId>
         <version>1.0</version>
     </parent>
 
-    <artifactId>m-pan-lock</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>lock-core</module>
-        <module>lock-local</module>
-    </modules>
+    <artifactId>m-pan-lock-local</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -22,5 +17,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.pandaer.pan</groupId>
+            <artifactId>m-pan-lock-core</artifactId>
+            <version>1.0</version>
+        </dependency>
+    </dependencies>
 
 </project>
