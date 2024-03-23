@@ -718,7 +718,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     }
 
     private void saveUserFileRecord(SecFileUploadContext context) {
-        MPanFile realFile = new MPanFile();
+        MPanFile realFile = context.getRealFileEntity();
         this.saveUserFile(context.getUserId(),context.getParentId(),realFile.getFileId(),context.getFilename(),
                 FileConstants.NO,realFile.getFileSizeDesc(),
                 FileType.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())));

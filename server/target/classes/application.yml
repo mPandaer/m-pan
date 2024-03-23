@@ -57,7 +57,7 @@ spring:
 
 
 server:
-  port: 8083
+  port: 8082
 
 management:
   endpoints:
@@ -67,7 +67,7 @@ management:
         exclude: env,beans
 
 swagger2:
-  enable: true
+  enable: false
 
 mybatis-plus:
   mapper-locations: classpath:mappers/**/*.xml
@@ -90,7 +90,7 @@ mybatis-plus:
 #        auto-create-bucket: true
 pan:
   server:
-    share-prefix: http://127.0.0.1:5173/share/simple
+    share-prefix: http://localhost:5173/share/
   bloom:
     filter:
       local:

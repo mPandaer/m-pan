@@ -90,7 +90,7 @@ mybatis-plus:
 #        auto-create-bucket: true
 pan:
   server:
-    share-prefix: http://47.109.68.222/share/
+    share-prefix: http://localhost:5173/share/
   bloom:
     filter:
       local:

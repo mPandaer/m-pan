@@ -22,12 +22,14 @@
     {
       "name": "pan.cache.caffeine.allow-null-values",
       "type": "java.lang.Boolean",
-      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties"
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "defaultValue": true
     },
     {
       "name": "pan.cache.caffeine.init-cache-capacity",
       "type": "java.lang.Integer",
-      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties"
+      "sourceType": "com.pandaer.pan.cache.caffeine.config.CaffeineConfigProperties",
+      "defaultValue": 100
     },
     {
       "name": "pan.cache.caffeine.max-cache-capacity",
