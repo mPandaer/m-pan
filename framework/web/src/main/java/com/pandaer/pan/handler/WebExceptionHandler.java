@@ -19,6 +19,7 @@ import javax.validation.ConstraintViolationException;
 public class WebExceptionHandler {
     @ExceptionHandler(value = MPanBusinessException.class)
     public Resp<Object> rPanBusinessExceptionHandler(MPanBusinessException e) {
+        e.printStackTrace();
         return Resp.error(e.getCode(), e.getMessage());
     }
 
@@ -53,11 +54,13 @@ public class WebExceptionHandler {
 
     @ExceptionHandler(value = MPanFrameworkException.class)
     public Resp<Object> mPanFrameworkExceptionHandler(MPanFrameworkException e) {
+        e.printStackTrace();
         return Resp.error(ResponseCode.ERROR.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(value = RuntimeException.class)
     public Resp<Object> runtimeExceptionHandler(RuntimeException e) {
+        e.printStackTrace();
         return Resp.error(ResponseCode.ERROR.getCode(), e.getMessage());
     }
 }

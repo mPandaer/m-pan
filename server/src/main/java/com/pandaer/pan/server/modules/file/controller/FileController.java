@@ -9,6 +9,7 @@ import com.pandaer.pan.server.common.utils.UserIdUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.*;
 import com.pandaer.pan.server.modules.file.converter.FileConverter;
+import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
 import com.pandaer.pan.server.modules.file.po.*;
 import com.pandaer.pan.server.modules.file.service.IUserFileService;
 import com.pandaer.pan.server.modules.file.vo.*;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
@@ -48,7 +50,10 @@ public class FileController {
             @RequestParam(value = "fileTypes", defaultValue = FileConstants.ALL_FILE_TYPE,required = false)
                 String fileTypes
     ) {
-        Long decParentId = IdUtil.decrypt(parentId);
+        Long decParentId = -1L;
+        if (!"-1".equals(parentId)) {
+            decParentId = IdUtil.decrypt(parentId);
+        }
         List<Integer> fileTypeList = null;
         if (!StringUtils.equals(fileTypes,FileConstants.ALL_FILE_TYPE)) {
             fileTypeList = Splitter.on(MPanConstants.COMMON_SEPARATOR).splitToList(fileTypes).stream()
@@ -116,7 +121,7 @@ public class FileController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @PostMapping("/file/chunk-upload")
-    public Resp<ChunkDataUploadVO> ChunkDataUpload(@Validated @RequestBody ChunkDataUploadPO chunkDataUploadPO) {
+    public Resp<ChunkDataUploadVO> ChunkDataUpload(@Validated ChunkDataUploadPO chunkDataUploadPO) {
         ChunkDataUploadContext context = fileConverter.PO2ContextInChunkDataUpload(chunkDataUploadPO);
         ChunkDataUploadVO vo = userFileService.chunkDataUpload(context);
         return Resp.successAndData(vo);
@@ -127,7 +132,7 @@ public class FileController {
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @GetMapping("/file/chunk-upload")
-    public Resp<UploadedFileChunkVO> queryUploadedFileChunk(@Validated @RequestBody QueryUploadedFileChunkPO queryUploadedFileChunkPO) {
+    public Resp<UploadedFileChunkVO> queryUploadedFileChunk(@Validated QueryUploadedFileChunkPO queryUploadedFileChunkPO) {
         QueryUploadedFileChunkContext context = fileConverter.PO2ContextInQueryUploadedFileChunk(queryUploadedFileChunkPO);
         UploadedFileChunkVO vo = userFileService.queryUploadedFileChunk(context);
         return Resp.successAndData(vo);
@@ -164,7 +169,7 @@ public class FileController {
     @GetMapping("/file/preview")
     public void preview(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId") String fileId, HttpServletResponse response) {
         FilePreviewContext filePreviewContext = new FilePreviewContext();
-        filePreviewContext.setFileId(fileId);
+        filePreviewContext.setFileId(IdUtil.decrypt(fileId));
         filePreviewContext.setResponse(response);
         filePreviewContext.setUserId(UserIdUtil.getUserId());
         userFileService.preview(filePreviewContext);

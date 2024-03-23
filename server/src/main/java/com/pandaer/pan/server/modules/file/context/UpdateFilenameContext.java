@@ -13,11 +13,6 @@ import java.io.Serializable;
 public class UpdateFilenameContext implements Serializable {
 
     /**
-     * 父文件夹ID
-     */
-    private Long parentId;
-
-    /**
      * 当前文件的ID
      */
     private Long fileId;

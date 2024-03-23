@@ -5,7 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.FileUtil;
 import com.pandaer.pan.core.utils.IdUtil;
-import com.pandaer.pan.server.common.event.log.ErrorLogEvent;
+import com.pandaer.pan.server.common.stream.channel.PanChannels;
+import com.pandaer.pan.server.common.stream.event.log.ErrorLogEvent;
 import com.pandaer.pan.server.modules.file.context.SaveFileContext;
 import com.pandaer.pan.storage.engine.core.context.DeleteFileContext;
 import com.pandaer.pan.storage.engine.core.context.StoreFileContext;
@@ -14,8 +15,10 @@ import com.pandaer.pan.server.modules.file.domain.MPanFile;
 import com.pandaer.pan.server.modules.file.service.IFileService;
 import com.pandaer.pan.server.modules.file.mapper.MPanFileMapper;
 import com.pandaer.pan.storage.engine.core.StorageEngine;
+import com.pandaer.pan.stream.core.IStreamProducer;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
@@ -31,7 +34,7 @@ import java.util.Date;
 */
 @Service
 public class FileServiceImpl extends ServiceImpl<MPanFileMapper, MPanFile>
-    implements IFileService, ApplicationContextAware {
+    implements IFileService {
 
     @Autowired
     private StorageEngine storageEngine;
@@ -39,7 +42,9 @@ public class FileServiceImpl extends ServiceImpl<MPanFileMapper, MPanFile>
     @Autowired
     private FileConverter fileConverter;
 
-    private ApplicationContext applicationContext;
+    @Autowired
+    @Qualifier("defaultStreamProducer")
+    private IStreamProducer streamProducer;
 
     @Override
     public MPanFile getFileWithIdentifier(String identifier) {
@@ -68,8 +73,8 @@ public class FileServiceImpl extends ServiceImpl<MPanFileMapper, MPanFile>
                 storageEngine.deleteFile(deleteFileContext);
             } catch (IOException e) {
                 e.printStackTrace();
-                ErrorLogEvent event = new ErrorLogEvent(this,"删除文件失败，文件路径 " + realPath,userId);
-                applicationContext.publishEvent(event);
+                ErrorLogEvent event = new ErrorLogEvent("删除文件失败，文件路径 " + realPath,userId);
+                streamProducer.sendMessage(PanChannels.ERROR_LOG_INPUT,event);
                 throw new MPanBusinessException("保存文件记录失败");
             }
         }
@@ -110,10 +115,6 @@ public class FileServiceImpl extends ServiceImpl<MPanFileMapper, MPanFile>
         }
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }
 
 

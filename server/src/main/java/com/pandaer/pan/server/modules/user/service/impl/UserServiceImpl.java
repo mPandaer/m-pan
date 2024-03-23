@@ -99,9 +99,6 @@ public class UserServiceImpl extends ServiceImpl<MPanUserMapper, MPanUser>
     @Override
     public String login(UserLoginContext context) {
         validLoginInfo(context);
-        if (checkLogined(context)) {
-            throw new MPanBusinessException("用户已经登录");
-        }
         genAndSaveAccessToken(context);
         return context.getAccessToken();
     }

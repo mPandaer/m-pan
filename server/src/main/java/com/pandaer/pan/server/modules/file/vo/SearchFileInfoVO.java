@@ -24,7 +24,7 @@ public class SearchFileInfoVO implements Serializable {
     private String parentName;
 
     @ApiModelProperty("文件名")
-    private String fileName;
+    private String filename;
     @ApiModelProperty("文件夹标识")
     private Integer folderFlag;
     @ApiModelProperty("文件大小描述")

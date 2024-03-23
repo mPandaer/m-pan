@@ -89,7 +89,7 @@ public class ShareController {
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    @DeleteMapping("share/code/check")
+    @PostMapping("share/code/check")
     @LoginIgnore
     public Resp<String> checkShareCode(@Validated @RequestBody CheckShareCodePO checkShareCodePO) {
         CheckShareCodeContext context = new CheckShareCodeContext();

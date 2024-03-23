@@ -50,7 +50,7 @@ public class LoginAspect {
         }
         Long userId = (Long) JwtUtil.analyzeToken(requestToken, UserConstants.LOGIN_USER_ID_KEY);
         if (userId == null) {
-            throw new MPanBusinessException("登录凭证不合法");
+            throw new MPanBusinessException("登录凭证不合法,请重新登陆");
         }
         String cacheToken = panCache.get(UserConstants.CACHE_LOGIN_USER_ID_PREFIX + userId, String.class);
         if (cacheToken == null) {

@@ -118,7 +118,7 @@ public class OSSStorageEngine extends AbstractStorageEngine {
         request.setUploadId(entity.getUploadId());
         request.setInputStream(context.getInputStream());
         request.setPartSize(context.getCurrentChunkSize());
-        request.setPartNumber(context.getCurrentChunkNumber());
+        request.setPartNumber(context.getChunkNumber());
         UploadPartResult result = ossClient.uploadPart(request);
         System.out.println(result);
         if (result == null) {

@@ -28,8 +28,5 @@ public class MergeChunkFilePO {
     @NotNull(message = "文件总大小不能为空")
     private Long totalSize;
 
-    @ApiModelProperty("文件总分片数")
-    @NotNull(message = "该文件分片总数不能为空")
-    private Long totalChunks;
 
 }

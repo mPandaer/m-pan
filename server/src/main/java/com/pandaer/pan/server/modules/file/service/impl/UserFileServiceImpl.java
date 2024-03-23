@@ -9,8 +9,9 @@ import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.core.exception.MPanBusinessException;
 import com.pandaer.pan.core.utils.FileUtil;
 import com.pandaer.pan.core.utils.IdUtil;
-import com.pandaer.pan.server.common.event.file.DeleteFileWithRecycleEvent;
-import com.pandaer.pan.server.common.event.file.SearchFileEvent;
+import com.pandaer.pan.server.common.stream.channel.PanChannels;
+import com.pandaer.pan.server.common.stream.event.file.DeleteFileWithRecycleEvent;
+import com.pandaer.pan.server.common.stream.event.file.SearchFileEvent;
 import com.pandaer.pan.server.common.utils.HttpUtil;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.*;
@@ -28,9 +29,11 @@ import com.pandaer.pan.server.modules.user.constants.UserConstants;
 import com.pandaer.pan.server.modules.user.convertor.UserConverter;
 import com.pandaer.pan.storage.engine.core.StorageEngine;
 import com.pandaer.pan.storage.engine.core.context.ReadFileContext;
+import com.pandaer.pan.stream.core.IStreamProducer;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.MediaType;
@@ -51,7 +54,7 @@ import java.util.stream.Stream;
  */
 @Service
 public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUserFile>
-        implements IUserFileService, ApplicationContextAware {
+        implements IUserFileService {
 
 
     @Autowired
@@ -66,8 +69,9 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     @Autowired
     private StorageEngine storageEngine;
 
-
-    private ApplicationContext applicationContext;
+    @Autowired
+    @Qualifier("defaultStreamProducer")
+    private IStreamProducer streamProducer;
 
     @Override
     public Long creatFolder(CreateFolderContext context) {
@@ -180,7 +184,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         SaveFileChunkContext saveFileChunkContext = fileConverter.context2contextInSaveChunkFile(context);
         fileChunkService.saveFileChunk(saveFileChunkContext);
         ChunkDataUploadVO vo = new ChunkDataUploadVO();
-        vo.setChunkNumber(saveFileChunkContext.getCurrentChunkNumber());
+        vo.setChunkNumber(saveFileChunkContext.getChunkNumber());
         vo.setMerge(saveFileChunkContext.getMerge());
         return vo;
     }
@@ -415,8 +419,8 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
      * @param searchFileContext
      */
     private void afterSearchFile(SearchFileContext searchFileContext) {
-        SearchFileEvent searchFileEvent = new SearchFileEvent(this, searchFileContext.getKeyword(), searchFileContext.getUserId());
-        applicationContext.publishEvent(searchFileEvent);
+        SearchFileEvent searchFileEvent = new SearchFileEvent(searchFileContext.getKeyword(), searchFileContext.getUserId());
+        streamProducer.sendMessage(PanChannels.USER_SEARCH_OUTPUT,searchFileEvent);
     }
 
     private List<SearchFileInfoVO> doSearchFile(SearchFileContext searchFileContext) {
@@ -624,7 +628,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     }
 
     private void doPreviewFile(MPanUserFile record, HttpServletResponse response) {
-        MPanFile fileEntity = fileService.getById(record.getFileId());
+        MPanFile fileEntity = fileService.getById(record.getRealFileId());
         if (Objects.isNull(fileEntity)) {
             throw new MPanBusinessException("文件不存在");
         }
@@ -642,7 +646,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
      * @param response
      */
     private void doDownloadFile(MPanUserFile record, HttpServletResponse response) {
-        MPanFile fileEntity = fileService.getById(record.getFileId());
+        MPanFile fileEntity = fileService.getById(record.getRealFileId());
         if (Objects.isNull(fileEntity)) {
             throw new MPanBusinessException("文件不存在");
         }
@@ -726,8 +730,8 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
     }
 
     private void publishDeleteFileEvent(DeleteFileWithRecycleContext context) {
-        DeleteFileWithRecycleEvent deleteFileWithRecycleEvent = new DeleteFileWithRecycleEvent(this, context.getFileIdList());
-        applicationContext.publishEvent(deleteFileWithRecycleEvent);
+        DeleteFileWithRecycleEvent deleteFileWithRecycleEvent = new DeleteFileWithRecycleEvent(context.getFileIdList());
+        streamProducer.sendMessage(PanChannels.DELETE_FILE_OUTPUT,deleteFileWithRecycleEvent);
     }
 
     private void batchDeleteFileWithRecycle(DeleteFileWithRecycleContext context) {
@@ -790,8 +794,7 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
         LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
         query.eq(MPanUserFile::getFilename,newFilename)
                 .eq(MPanUserFile::getFolderFlag,entity.getFolderFlag())
-                .eq(MPanUserFile::getUserId,context.getUserId())
-                .eq(MPanUserFile::getParentId,context.getParentId());
+                .eq(MPanUserFile::getUserId,context.getUserId());
         int count = count(query);
         if (count > 0) {
             throw new MPanBusinessException("新文件名在当前文件夹下已经存在");
@@ -894,18 +897,14 @@ public class UserFileServiceImpl extends ServiceImpl<MPanUserFileMapper, MPanUse
      */
     private Integer getCountWithFileName(MPanUserFile userFile, String filenameNoSuffix) {
         LambdaQueryWrapper<MPanUserFile> query = new LambdaQueryWrapper<>();
-        query.eq(MPanUserFile::getUserId, userFile.getFileId())
+        query.eq(MPanUserFile::getUserId, userFile.getUserId())
                 .eq(MPanUserFile::getParentId, userFile.getParentId())
                 .eq(MPanUserFile::getDelFlag, FileConstants.NO)
                 .eq(MPanUserFile::getFolderFlag, userFile.getFolderFlag())
-                .likeLeft(MPanUserFile::getFilename, filenameNoSuffix);
+                .likeRight(MPanUserFile::getFilename, filenameNoSuffix);
         return count(query);
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }
 
 

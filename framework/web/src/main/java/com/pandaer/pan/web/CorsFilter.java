@@ -33,11 +33,11 @@ public class CorsFilter implements Filter {
         response.setHeader("Access-Control-Allow-Origin", origin);
         
         // 允许跨域请求的域名，* 表示允许所有域名
-        response.setHeader("Access-Control-Allow-Origin", "*");
+//        response.setHeader("Access-Control-Allow-Origin", "*");
         // 允许的请求方法
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         // 允许的请求头字段
-        response.setHeader("Access-Control-Allow-Headers", "origin, content-type, accept, authorization");
+        response.setHeader("Access-Control-Allow-Headers", "*");
         // 是否允许浏览器在跨域请求中携带身份凭证（例如：Cookies）
         response.setHeader("Access-Control-Allow-Credentials", "true");
         // 预检请求的有效期，单位：秒

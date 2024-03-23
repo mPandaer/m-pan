@@ -1,7 +1,11 @@
 package com.pandaer.pan.server.modules.user.service;
 
+import com.pandaer.pan.server.modules.user.context.UserHistoryContext;
 import com.pandaer.pan.server.modules.user.domain.MPanUserSearchHistory;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.pandaer.pan.server.modules.user.vo.UserHistoryVO;
+
+import java.util.List;
 
 /**
 * @author pandaer
@@ -10,4 +14,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface IUserSearchHistoryService extends IService<MPanUserSearchHistory> {
 
+    List<UserHistoryVO> queryUserHistory(UserHistoryContext context);
 }

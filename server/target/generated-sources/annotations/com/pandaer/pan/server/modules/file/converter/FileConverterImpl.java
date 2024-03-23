@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-03-15T08:55:55+0800",
+    date = "2024-03-22T13:41:55+0800",
     comments = "version: 1.5.2.Final, compiler: javac, environment: Java 1.8.0_402 (Azul Systems, Inc.)"
 )
 @Component
@@ -114,7 +114,6 @@ public class FileConverterImpl implements FileConverter {
         updateFilenameContext.setNewFilename( updateFilenamePO.getNewFilename() );
 
         updateFilenameContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
-        updateFilenameContext.setParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(updateFilenamePO.getParentId()) );
         updateFilenameContext.setFileId( com.pandaer.pan.core.utils.IdUtil.decrypt(updateFilenamePO.getFileId()) );
 
         return updateFilenameContext;
@@ -214,9 +213,9 @@ public class FileConverterImpl implements FileConverter {
         chunkDataUploadContext.setIdentifier( chunkDataUploadPO.getIdentifier() );
         chunkDataUploadContext.setTotalSize( chunkDataUploadPO.getTotalSize() );
         chunkDataUploadContext.setTotalChunks( chunkDataUploadPO.getTotalChunks() );
-        chunkDataUploadContext.setCurrentChunkNumber( chunkDataUploadPO.getCurrentChunkNumber() );
+        chunkDataUploadContext.setChunkNumber( chunkDataUploadPO.getChunkNumber() );
         chunkDataUploadContext.setCurrentChunkSize( chunkDataUploadPO.getCurrentChunkSize() );
-        chunkDataUploadContext.setFileData( chunkDataUploadPO.getFileData() );
+        chunkDataUploadContext.setFile( chunkDataUploadPO.getFile() );
 
         chunkDataUploadContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
 
@@ -232,9 +231,9 @@ public class FileConverterImpl implements FileConverter {
         SaveFileChunkContext saveFileChunkContext = new SaveFileChunkContext();
 
         saveFileChunkContext.setIdentifier( context.getIdentifier() );
-        saveFileChunkContext.setCurrentChunkNumber( context.getCurrentChunkNumber() );
+        saveFileChunkContext.setChunkNumber( context.getChunkNumber() );
         saveFileChunkContext.setCurrentChunkSize( context.getCurrentChunkSize() );
-        saveFileChunkContext.setFileData( context.getFileData() );
+        saveFileChunkContext.setFile( context.getFile() );
         saveFileChunkContext.setUserId( context.getUserId() );
         saveFileChunkContext.setTotalChunks( context.getTotalChunks() );
         saveFileChunkContext.setFilename( context.getFilename() );
@@ -251,7 +250,7 @@ public class FileConverterImpl implements FileConverter {
         StoreFileChunkContext storeFileChunkContext = new StoreFileChunkContext();
 
         storeFileChunkContext.setIdentifier( saveFileChunkContext.getIdentifier() );
-        storeFileChunkContext.setCurrentChunkNumber( saveFileChunkContext.getCurrentChunkNumber() );
+        storeFileChunkContext.setChunkNumber( saveFileChunkContext.getChunkNumber() );
         storeFileChunkContext.setCurrentChunkSize( saveFileChunkContext.getCurrentChunkSize() );
         storeFileChunkContext.setTotalChunks( saveFileChunkContext.getTotalChunks() );
         storeFileChunkContext.setUserId( saveFileChunkContext.getUserId() );
@@ -286,7 +285,6 @@ public class FileConverterImpl implements FileConverter {
         mergeChunkFileContext.setFilename( mergeChunkFilePO.getFilename() );
         mergeChunkFileContext.setIdentifier( mergeChunkFilePO.getIdentifier() );
         mergeChunkFileContext.setTotalSize( mergeChunkFilePO.getTotalSize() );
-        mergeChunkFileContext.setTotalChunks( mergeChunkFilePO.getTotalChunks() );
 
         mergeChunkFileContext.setUserId( com.pandaer.pan.server.common.utils.UserIdUtil.getUserId() );
         mergeChunkFileContext.setParentId( com.pandaer.pan.core.utils.IdUtil.decrypt(mergeChunkFilePO.getParentId()) );
@@ -381,6 +379,7 @@ public class FileConverterImpl implements FileConverter {
 
         searchFileInfoVO.setFileId( mPanUserFile.getFileId() );
         searchFileInfoVO.setParentId( mPanUserFile.getParentId() );
+        searchFileInfoVO.setFilename( mPanUserFile.getFilename() );
         searchFileInfoVO.setFolderFlag( mPanUserFile.getFolderFlag() );
         searchFileInfoVO.setFileSizeDesc( mPanUserFile.getFileSizeDesc() );
         searchFileInfoVO.setFileType( mPanUserFile.getFileType() );

@@ -51,7 +51,7 @@ public class LocalStorageEngine extends AbstractStorageEngine {
     @Override
     protected void doStoreChunkFile(StoreFileChunkContext context) throws IOException {
         String basePath = properties.getChunkBasePath();
-        String realFilePath = FileUtil.genRealChunkFilePath(basePath,context.getIdentifier(),context.getCurrentChunkNumber());
+        String realFilePath = FileUtil.genRealChunkFilePath(basePath,context.getIdentifier(),context.getChunkNumber());
         FileUtil.writeStream2File(context.getInputStream(),new File(realFilePath),context.getCurrentChunkSize());
         context.setRealPath(realFilePath);
     }

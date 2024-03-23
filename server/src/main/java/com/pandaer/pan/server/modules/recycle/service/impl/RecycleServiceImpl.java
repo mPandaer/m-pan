@@ -3,8 +3,9 @@ package com.pandaer.pan.server.modules.recycle.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pandaer.pan.core.exception.MPanBusinessException;
-import com.pandaer.pan.server.common.event.file.ActualDeleteFileEvent;
-import com.pandaer.pan.server.common.event.file.RestoreFileEvent;
+import com.pandaer.pan.server.common.stream.channel.PanChannels;
+import com.pandaer.pan.server.common.stream.event.file.ActualDeleteFileEvent;
+import com.pandaer.pan.server.common.stream.event.file.RestoreFileEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.QueryFileListContext;
 import com.pandaer.pan.server.modules.file.domain.MPanUserFile;
@@ -14,8 +15,10 @@ import com.pandaer.pan.server.modules.recycle.context.ActualDeleteFileContext;
 import com.pandaer.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.pandaer.pan.server.modules.recycle.context.RestoreFileContext;
 import com.pandaer.pan.server.modules.recycle.service.IRecycleService;
+import com.pandaer.pan.stream.core.IStreamProducer;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
@@ -27,12 +30,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class RecycleServiceImpl implements IRecycleService, ApplicationContextAware {
+public class RecycleServiceImpl implements IRecycleService {
 
     @Autowired
     private IUserFileService iUserFileService;
 
-    private ApplicationContext applicationContext;
+    @Autowired
+    @Qualifier("defaultStreamProducer")
+    private IStreamProducer streamProducer;
 
 
     @Override
@@ -85,8 +90,8 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
      * @param actualDeleteFileContext
      */
     private void AfterDelete(ActualDeleteFileContext actualDeleteFileContext) {
-        ActualDeleteFileEvent event = new ActualDeleteFileEvent(this, actualDeleteFileContext.getAllRecords());
-        applicationContext.publishEvent(event);
+        ActualDeleteFileEvent event = new ActualDeleteFileEvent(actualDeleteFileContext.getAllRecords());
+        streamProducer.sendMessage(PanChannels.PHYSICAL_DELETE_FILE_OUTPUT, event);
     }
 
     /**
@@ -129,8 +134,8 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
      * @param restoreFileContext
      */
     private void AfterRestore(RestoreFileContext restoreFileContext) {
-        RestoreFileEvent restoreFileEvent = new RestoreFileEvent(this, restoreFileContext.getFileIdList());
-        applicationContext.publishEvent(restoreFileEvent);
+        RestoreFileEvent restoreFileEvent = new RestoreFileEvent(restoreFileContext.getFileIdList());
+        streamProducer.sendMessage(PanChannels.FILE_RESTORE_OUTPUT, restoreFileEvent);
 
     }
 
@@ -194,8 +199,4 @@ public class RecycleServiceImpl implements IRecycleService, ApplicationContextAw
         restoreFileContext.setUserFileList(records);
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }

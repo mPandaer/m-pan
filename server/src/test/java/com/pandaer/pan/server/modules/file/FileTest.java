@@ -82,7 +82,6 @@ public class FileTest {
         UpdateFilenameContext updateFilenameContext = new UpdateFilenameContext();
         updateFilenameContext.setNewFilename("旧旧的文件夹");
         updateFilenameContext.setFileId(fileId);
-        updateFilenameContext.setParentId(currentUser.getRootFileId());
         updateFilenameContext.setUserId(userId);
         userFileService.updateFilename(updateFilenameContext);
 
@@ -103,7 +102,6 @@ public class FileTest {
         UpdateFilenameContext updateFilenameContext = new UpdateFilenameContext();
         updateFilenameContext.setNewFilename("旧旧的文件夹");
         updateFilenameContext.setFileId(fileId + 100);
-        updateFilenameContext.setParentId(currentUser.getRootFileId());
         updateFilenameContext.setUserId(userId);
         userFileService.updateFilename(updateFilenameContext);
     }
@@ -130,7 +128,6 @@ public class FileTest {
         UpdateFilenameContext updateFilenameContext = new UpdateFilenameContext();
         updateFilenameContext.setNewFilename("旧旧的文件夹");
         updateFilenameContext.setFileId(fileId);
-        updateFilenameContext.setParentId(currentUser.getRootFileId());
         updateFilenameContext.setUserId(userId);
         userFileService.updateFilename(updateFilenameContext);
     }
@@ -278,9 +275,9 @@ public class FileTest {
         //上传文件
         MultipartFile file = genMockFile();
         ChunkDataUploadContext chunkDataUploadContext = new ChunkDataUploadContext();
-        chunkDataUploadContext.setCurrentChunkNumber(1);
+        chunkDataUploadContext.setChunkNumber(1);
         chunkDataUploadContext.setTotalChunks(1);
-        chunkDataUploadContext.setFileData(file);
+        chunkDataUploadContext.setFile(file);
         chunkDataUploadContext.setCurrentChunkSize(file.getSize());
         chunkDataUploadContext.setTotalSize(file.getSize());
         chunkDataUploadContext.setIdentifier("identifier");
@@ -340,12 +337,12 @@ public class FileTest {
             ChunkDataUploadContext chunkDataUploadContext = new ChunkDataUploadContext();
             chunkDataUploadContext.setUserId(userId);
             chunkDataUploadContext.setTotalChunks(chunks);
-            chunkDataUploadContext.setFileData(chunkFile);
+            chunkDataUploadContext.setFile(chunkFile);
             chunkDataUploadContext.setIdentifier(identifier);
             chunkDataUploadContext.setFilename(filename);
             chunkDataUploadContext.setTotalSize(chunkFile.getSize() * chunks);
             chunkDataUploadContext.setCurrentChunkSize(chunkFile.getSize());
-            chunkDataUploadContext.setCurrentChunkNumber(chunkNumber);
+            chunkDataUploadContext.setChunkNumber(chunkNumber);
             ChunkDataUploadVO vo = userFileService.chunkDataUpload(chunkDataUploadContext);
             if (Objects.equals(vo.getMerge(), FileConstants.YES)) {
                 System.out.println(vo.getChunkNumber() + "号分片 检测到需要合并文件 " + vo.getMerge());
@@ -354,7 +351,6 @@ public class FileTest {
                 mergeChunkFileContext.setFilename(filename);
                 mergeChunkFileContext.setParentId(parentId);
                 mergeChunkFileContext.setUserId(userId);
-                mergeChunkFileContext.setTotalChunks((long) chunks);
                 mergeChunkFileContext.setTotalSize(chunkFile.getSize() * chunks);
                 userFileService.mergeChunkFile(mergeChunkFileContext);
             }

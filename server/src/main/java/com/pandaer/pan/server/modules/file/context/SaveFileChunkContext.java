@@ -11,11 +11,11 @@ public class SaveFileChunkContext {
     /**
      * 当前分片序号 从1开始
      */
-    private Integer currentChunkNumber;
+    private Integer chunkNumber;
 
     private Long currentChunkSize;
 
-    private MultipartFile fileData;
+    private MultipartFile file;
 
     private Long userId;
 

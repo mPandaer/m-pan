@@ -32,7 +32,7 @@ public class ChunkDataUploadPO {
 
     @ApiModelProperty("当前分片号")
     @NotNull(message = "当前分片号不能为空")
-    private Integer currentChunkNumber;
+    private Integer chunkNumber;
 
     @ApiModelProperty("当前分片大小")
     @NotNull(message = "当前分片大小不能为空")
@@ -40,5 +40,5 @@ public class ChunkDataUploadPO {
 
     @ApiModelProperty("当前分片数据")
     @NotNull(message = "当前分片文件数据不能为空")
-    private MultipartFile fileData;
+    private MultipartFile file;
 }

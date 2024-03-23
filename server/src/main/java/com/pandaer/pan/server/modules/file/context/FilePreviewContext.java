@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletResponse;
 @Data
 public class FilePreviewContext {
 
-    private String fileId;
+    private Long fileId;
 
     private HttpServletResponse response;
 

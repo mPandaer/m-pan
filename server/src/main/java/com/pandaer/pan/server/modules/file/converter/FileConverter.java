@@ -35,7 +35,6 @@ public interface FileConverter {
     CreateFolderContext PO2ContextInCreateFolder(CreateFolderPO createFolderPO);
 
     @Mapping(target = "userId",expression = "java(com.pandaer.pan.server.common.utils.UserIdUtil.getUserId())")
-    @Mapping(target = "parentId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(updateFilenamePO.getParentId()))")
     @Mapping(target = "fileId",expression = "java(com.pandaer.pan.core.utils.IdUtil.decrypt(updateFilenamePO.getFileId()))")
     UpdateFilenameContext PO2ContextInUpdateFilename(UpdateFilenamePO updateFilenamePO);
 

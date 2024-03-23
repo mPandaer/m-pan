@@ -25,7 +25,7 @@ public class UserCacheService implements AnnotationCacheService<MPanUser> {
     }
 
     @Override
-    @CachePut(cacheNames = CacheConstants.M_PAN_CACHE_NAME,keyGenerator = "userIdKeyGenerator")
+    @CacheEvict(cacheNames = CacheConstants.M_PAN_CACHE_NAME,keyGenerator = "userIdKeyGenerator")
     public boolean updateById(Serializable id, MPanUser entity) {
         return userMapper.updateById(entity) > 0;
     }

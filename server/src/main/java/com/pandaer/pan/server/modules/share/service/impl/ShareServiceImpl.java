@@ -12,7 +12,8 @@ import com.pandaer.pan.core.utils.JwtUtil;
 import com.pandaer.pan.core.utils.UUIDUtil;
 import com.pandaer.pan.server.common.cache.ManualCacheService;
 import com.pandaer.pan.server.common.config.PanServerConfigProperties;
-import com.pandaer.pan.server.common.event.log.ErrorLogEvent;
+import com.pandaer.pan.server.common.stream.channel.PanChannels;
+import com.pandaer.pan.server.common.stream.event.log.ErrorLogEvent;
 import com.pandaer.pan.server.modules.file.constants.FileConstants;
 import com.pandaer.pan.server.modules.file.context.CopyFileContext;
 import com.pandaer.pan.server.modules.file.context.FileDownloadContext;
@@ -34,6 +35,7 @@ import com.pandaer.pan.server.modules.share.mapper.MPanShareMapper;
 import com.pandaer.pan.server.modules.share.vo.*;
 import com.pandaer.pan.server.modules.user.domain.MPanUser;
 import com.pandaer.pan.server.modules.user.service.IUserService;
+import com.pandaer.pan.stream.core.IStreamProducer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +55,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
-    implements IShareService, ApplicationContextAware {
+    implements IShareService{
 
     private final IUserFileService userFileService;
 
@@ -72,6 +74,10 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
     private final ManualCacheService<MPanShare> shareManualCacheService;
 
     @Autowired
+    @Qualifier("defaultStreamProducer")
+    private IStreamProducer streamProducer;
+
+    @Autowired
     public ShareServiceImpl(IUserFileService userFileService,
                             IShareFileService shareFileService,
                             IUserService userService, PanServerConfigProperties properties,
@@ -88,8 +94,6 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         this.shareManualCacheService = shareManualCacheService;
     }
 
-
-    private ApplicationContext applicationContext;
 
 
 
@@ -295,8 +299,8 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         MPanShare share = getById(id);
         share.setShareStatus(shareStatus);
         if (!updateById(share)) {
-            ErrorLogEvent event = new ErrorLogEvent(this, "更新分享状态失败 分享Id为: " + id, MPanConstants.ZERO_LONG);
-            applicationContext.publishEvent(event);
+            ErrorLogEvent event = new ErrorLogEvent("更新分享状态失败 分享Id为: " + id, MPanConstants.ZERO_LONG);
+            streamProducer.sendMessage(PanChannels.ERROR_LOG_OUTPUT,event);
         }
     }
 
@@ -340,7 +344,10 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         query.eq(MPanShareFile::getShareId,shareId);
         List<Long> shareFileList =
                 shareFileService.list(query).stream().map(MPanShareFile::getFileId).collect(Collectors.toList());
-        if (!new HashSet<>(shareFileList).containsAll(fileIdList)) {
+        List<MPanUserFile> mPanUserFiles = userFileService.listByIds(shareFileList);
+        List<MPanUserFile> allRecords = userFileService.findAllRecords(mPanUserFiles);
+        if (!new HashSet<>(allRecords.stream().map(MPanUserFile::getFileId).collect(Collectors.toList()))
+                .containsAll(fileIdList)) {
             throw new MPanBusinessException("要下载的文件存在不合法");
         }
     }
@@ -381,10 +388,14 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         }
         Long shareId = context.getShareId();
         LambdaQueryWrapper<MPanShareFile> query = new LambdaQueryWrapper<>();
-        query.eq(MPanShareFile::getShareId,shareId)
-                .in(MPanShareFile::getFileId,fileIdList);
-        int res = shareFileService.count(query);
-        if (fileIdList.size() != res) {
+        query.eq(MPanShareFile::getShareId,shareId);
+        List<MPanShareFile> list = shareFileService.list(query);
+        List<Long> collect = list.stream().map(MPanShareFile::getFileId).collect(Collectors.toList());
+        //获取到全部的分享文件
+        List<MPanUserFile> allRecords = userFileService.findAllRecords(userFileService.listByIds(collect));
+        List<Long> allShareIds = allRecords.stream().filter(entity -> Objects.equals(entity.getDelFlag(), FileConstants.NO))
+                .map(MPanUserFile::getFileId).collect(Collectors.toList());
+        if (!new HashSet<>(allShareIds).containsAll(fileIdList)) {
             throw new MPanBusinessException("要保存的文件列表存在不合法文件");
         }
     }
@@ -720,10 +731,6 @@ public class ShareServiceImpl extends ServiceImpl<MPanShareMapper, MPanShare>
         return share;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }
 
 

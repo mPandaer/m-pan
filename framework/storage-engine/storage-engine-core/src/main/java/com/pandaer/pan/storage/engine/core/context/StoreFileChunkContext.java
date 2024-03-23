@@ -11,7 +11,7 @@ public class StoreFileChunkContext {
 
     private InputStream inputStream;
 
-    private Integer currentChunkNumber;
+    private Integer chunkNumber;
 
     private Long currentChunkSize;
 

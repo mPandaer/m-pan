@@ -11,12 +11,6 @@ import java.io.Serializable;
 @Data
 public class UpdateFilenamePO implements Serializable {
 
-    /**
-     * 父文件夹加密ID
-     */
-    @ApiModelProperty("父文件夹加密ID")
-    @NotBlank(message = "父文件夹Id不能为空")
-    private String parentId;
 
     /**
      * 当前文件的加密ID

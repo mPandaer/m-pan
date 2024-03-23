@@ -8,30 +8,30 @@ import lombok.EqualsAndHashCode;
 @Data
 public class MPanBusinessException extends RuntimeException {
     private final Integer code;
-    private final String msg;
+    private final String message;
 
-    public MPanBusinessException(Integer code, String msg) {
-        super(msg);
+    public MPanBusinessException(Integer code, String message) {
+        super(message);
         this.code = code;
-        this.msg = msg;
+        this.message = message;
     }
 
     public MPanBusinessException(ResponseCode responseCode) {
         super(responseCode.getMsg());
         this.code = responseCode.getCode();
-        this.msg = responseCode.getMsg();
+        this.message = responseCode.getMsg();
     }
 
-    public MPanBusinessException(String msg) {
-        super(msg);
+    public MPanBusinessException(String message) {
+        super(message);
         this.code = ResponseCode.ERROR_PARAM.getCode();
-        this.msg = msg;
+        this.message = message;
     }
 
     public MPanBusinessException() {
         super(ResponseCode.ERROR_PARAM.getMsg());
         this.code = ResponseCode.ERROR_PARAM.getCode();
-        this.msg = ResponseCode.ERROR_PARAM.getMsg();
+        this.message = ResponseCode.ERROR_PARAM.getMsg();
     }
 
 }

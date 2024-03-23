@@ -11,13 +11,53 @@ spring:
     multipart:
       max-file-size: 3072MB
       max-request-size: 3072MB
+      enabled: true
   datasource:
     username: root
     password: 101807
-    url: jdbc:mysql://localhost:3306/m_pan?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/m_pan?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+      bindings:
+        testInput:
+          destination: testTopic
+          group: testTopicGroup
+        testOutput:
+          destination: testTopic
+        errorLogInput:
+          destination: errorLogTopic
+          group: errorLogGroup
+        errorLogOutput:
+          destination: errorLogTopic
+        deleteFileInput:
+          destination: deleteFileTopic
+          group: deleteFileGroup
+        deleteFileOutput:
+          destination: deleteFileTopic
+        fileRestoreInput:
+          destination: fileRestoreTopic
+          group: fileRestoreGroup
+        fileRestoreOutput:
+          destination: fileRestoreTopic
+        physicalDeleteFileInput:
+          destination: physicalDeleteFileTopic
+          group: physicalDeleteFileGroup
+        physicalDeleteFileOutput:
+          destination: physicalDeleteFileTopic
+        userSearchInput:
+          destination: userSearchTopic
+          group: userSearchGroup
+        userSearchOutput:
+          destination: userSearchTopic
+
+
+
 server:
-  port: 8080
+  port: 8082
 
 management:
   endpoints:
@@ -27,11 +67,10 @@ management:
         exclude: env,beans
 
 swagger2:
-  enable: true
+  enable: false
 
 mybatis-plus:
   mapper-locations: classpath:mappers/**/*.xml
-
 
 #pan:
 #  storage:
@@ -51,7 +90,7 @@ mybatis-plus:
 #        auto-create-bucket: true
 pan:
   server:
-    share-prefix: http://127.0.0.1:5173
+    share-prefix: http://47.109.68.222/share/
   bloom:
     filter:
       local:
@@ -60,4 +99,3 @@ pan:
             funnel-type-name: LONG
             expected-insertions: 100000
             fpp: 0.01
-

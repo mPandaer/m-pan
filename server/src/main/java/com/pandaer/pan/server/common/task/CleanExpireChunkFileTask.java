@@ -5,14 +5,17 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pandaer.pan.core.constants.MPanConstants;
 import com.pandaer.pan.schedule.ScheduleTask;
-import com.pandaer.pan.server.common.event.log.ErrorLogEvent;
+import com.pandaer.pan.server.common.stream.channel.PanChannels;
+import com.pandaer.pan.server.common.stream.event.log.ErrorLogEvent;
 import com.pandaer.pan.server.modules.file.domain.MPanFileChunk;
 import com.pandaer.pan.server.modules.file.service.IFileChunkService;
 import com.pandaer.pan.storage.engine.core.StorageEngine;
 import com.pandaer.pan.storage.engine.core.context.DeleteFileContext;
+import com.pandaer.pan.stream.core.IStreamProducer;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
@@ -33,7 +36,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Log4j2
-public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContextAware {
+public class CleanExpireChunkFileTask implements ScheduleTask {
 
     public static final Long BATCH_SIZE = 500L;
 
@@ -43,7 +46,10 @@ public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContex
     @Autowired
     private StorageEngine storageEngine;
 
-    private ApplicationContext applicationContext;
+
+    @Autowired
+    @Qualifier("defaultStreamProducer")
+    private IStreamProducer streamProducer;
 
     @Override
     public String getName() {
@@ -81,8 +87,8 @@ public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContex
         try {
             storageEngine.deleteFile(deleteFileContext);
         } catch (IOException e) {
-            ErrorLogEvent event = new ErrorLogEvent(this,"分片文件删除失败 分片路径：" + JSON.toJSONString(pathList), MPanConstants.ZERO_LONG);
-            applicationContext.publishEvent(event);
+            ErrorLogEvent event = new ErrorLogEvent("分片文件删除失败 分片路径：" + JSON.toJSONString(pathList), MPanConstants.ZERO_LONG);
+            streamProducer.sendMessage(PanChannels.ERROR_LOG_INPUT,event);
         }
     }
 
@@ -98,10 +104,5 @@ public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContex
                 .ge(MPanFileChunk::getId,scrollId);
         query.last("limit " + BATCH_SIZE);
         return fileChunkService.list(query);
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }

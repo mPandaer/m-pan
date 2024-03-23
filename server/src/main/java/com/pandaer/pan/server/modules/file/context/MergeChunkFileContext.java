@@ -19,8 +19,6 @@ public class MergeChunkFileContext {
 
     private Long totalSize;
 
-    private Long totalChunks;
-
     private Long userId;
 
     private Long realFileId;

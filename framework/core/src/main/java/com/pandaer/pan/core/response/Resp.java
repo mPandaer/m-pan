@@ -11,12 +11,12 @@ import java.io.Serializable;
 @Getter
 public class Resp<T> implements Serializable {
     private final Integer code;
-    private final String msg;
+    private final String message;
     private final T data;
 
     private Resp(Integer code, String msg, T data) {
         this.code = code;
-        this.msg = msg;
+        this.message = msg;
         this.data = data;
     }
 

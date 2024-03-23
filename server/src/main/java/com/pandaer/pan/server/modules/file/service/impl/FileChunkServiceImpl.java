@@ -141,9 +141,6 @@ public class FileChunkServiceImpl extends ServiceImpl<MPanFileChunkMapper, MPanF
                 .eq(MPanFileChunk::getCreateUser,userId)
                 .ge(MPanFileChunk::getExpirationTime,new Date());
         List<MPanFileChunk> chunkList = list(query);
-        if (chunkList.size() != context.getTotalChunks()) {
-            throw new MPanBusinessException("分片文件不完整");
-        }
         context.setChunkList(chunkList);
     }
 
@@ -171,7 +168,7 @@ public class FileChunkServiceImpl extends ServiceImpl<MPanFileChunkMapper, MPanF
         fileChunk.setId(IdUtil.get());
         fileChunk.setIdentifier(saveFileChunkContext.getIdentifier());
         fileChunk.setRealPath(saveFileChunkContext.getRealPath());
-        fileChunk.setChunkNumber(saveFileChunkContext.getCurrentChunkNumber());
+        fileChunk.setChunkNumber(saveFileChunkContext.getChunkNumber());
         fileChunk.setCreateUser(saveFileChunkContext.getUserId());
         fileChunk.setCreateTime(new Date());
         fileChunk.setExpirationTime(DateUtil.offsetDay(new Date(),properties.getChunkFileExpirationDays()));
@@ -187,7 +184,7 @@ public class FileChunkServiceImpl extends ServiceImpl<MPanFileChunkMapper, MPanF
     private void storeFileChunk(SaveFileChunkContext saveFileChunkContext) {
         try {
             StoreFileChunkContext storeFileChunkContext = fileConverter.context2contextInSaveFileChunk(saveFileChunkContext);
-            storeFileChunkContext.setInputStream(saveFileChunkContext.getFileData().getInputStream());
+            storeFileChunkContext.setInputStream(saveFileChunkContext.getFile().getInputStream());
             storageEngine.storeChunk(storeFileChunkContext);
             saveFileChunkContext.setRealPath(storeFileChunkContext.getRealPath());
         } catch (IOException e) {
